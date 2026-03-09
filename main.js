@@ -45,7 +45,7 @@ ipcMain.on('start-follow-mouse', (event) => {
   if (!win) return;
 
   // 缩小窗口并设置置顶
-  win.setSize(120, 50);
+  win.setSize(100, 40);
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setAlwaysOnTop(true, 'screen-saver'); // 更高优先级的置顶
   win.setIgnoreMouseEvents(true); // 忽略鼠标事件

@@ -516,16 +516,17 @@
   padding: 0 !important;
 }
 .mini-mode #timer {
-  font-size: 1.25rem !important;
-  line-height: 1.75rem !important;
-  color: #4b5563 !important;
-  background-color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  color: #1f2937 !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
   border-radius: 9999px !important;
-  padding: 0.25rem 0.75rem !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid rgba(229, 231, 235, 0.5) !important;
+  padding: 0.125rem 0.625rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  border: 0 !important;
+  outline: none !important;
   backdrop-filter: blur(8px) !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
 }
 .mini-mode .controls-area, .mini-mode .settings-area, .mini-mode h1, .mini-mode #status-text, .mini-mode #drag-region, .mini-mode .absolute {
   display: none !important;

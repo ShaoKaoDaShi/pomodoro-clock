@@ -1,54 +1,115 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>番茄时钟</title>
-  <link rel="stylesheet" href="main.css">
-</head>
-<body class="bg-transparent flex justify-center items-center h-screen select-none font-sans text-gray-800 overflow-hidden">
-  <!-- 拖拽区域 -->
-  <div class="fixed top-0 left-0 w-full h-8 z-50 [-webkit-app-region:drag]" id="drag-region"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>番茄时钟</title>
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body
+    class="bg-transparent flex justify-center items-center h-screen select-none font-sans text-gray-800 overflow-hidden"
+  >
+    <!-- 拖拽区域 -->
+    <div
+      class="fixed top-0 left-0 w-full h-8 z-50 [-webkit-app-region:drag]"
+      id="drag-region"
+    ></div>
 
-  <div id="app-container" class="bg-white/95 backdrop-blur-md p-8 rounded-xl shadow-2xl w-80 text-center relative border border-gray-200">
-    <!-- 关闭按钮 (模拟) -->
-    <div class="absolute top-2 right-2 flex gap-1 z-50">
-       <div class="w-3 h-3 rounded-full bg-red-500 cursor-pointer hover:bg-red-600 transition" onclick="window.close()"></div>
+    <div
+      id="app-container"
+      class="bg-white/95 backdrop-blur-md p-8 rounded-xl shadow-2xl w-80 text-center relative"
+    >
+      <!-- 关闭按钮 (模拟) -->
+      <div class="absolute top-2 right-2 flex gap-1 z-50">
+        <div
+          class="w-3 h-3 rounded-full bg-red-500 cursor-pointer hover:bg-red-600 transition"
+          onclick="window.close()"
+        ></div>
+      </div>
+
+      <h1
+        class="text-2xl font-bold text-red-600 mb-4 [-webkit-app-region:drag]"
+      >
+        🍅 番茄时钟
+      </h1>
+
+      <div
+        id="timer"
+        class="text-6xl font-bold my-4 text-gray-800 tabular-nums"
+      >
+        25:00
+      </div>
+
+      <div class="mb-6 text-gray-500" id="status-text">准备开始专注</div>
+
+      <div class="flex justify-between gap-3 mb-6 controls-area">
+        <button
+          id="start-btn"
+          class="flex-1 py-2 px-4 rounded-md transition bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80 disabled:active:opacity-50 cursor-pointer [-webkit-app-region:no-drag]"
+        >
+          开始
+        </button>
+        <button
+          id="pause-btn"
+          class="flex-1 py-2 px-4 rounded-md transition bg-yellow-400 text-yellow-900 hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80 disabled:active:opacity-50 cursor-pointer [-webkit-app-region:no-drag]"
+          disabled
+        >
+          暂停
+        </button>
+        <button
+          id="reset-btn"
+          class="flex-1 py-2 px-4 rounded-md transition bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80 disabled:active:opacity-50 cursor-pointer [-webkit-app-region:no-drag]"
+        >
+          重置
+        </button>
+      </div>
+
+      <div
+        class="flex flex-col gap-3 text-left border-t border-gray-200 pt-4 settings-area"
+      >
+        <label class="flex justify-between items-center text-sm">
+          专注时长 (分钟):
+          <input
+            type="number"
+            id="work-time"
+            value="25"
+            min="1"
+            max="60"
+            class="w-16 p-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-400 [-webkit-app-region:no-drag]"
+          />
+        </label>
+        <label class="flex justify-between items-center text-sm">
+          休息时长 (分钟):
+          <input
+            type="number"
+            id="break-time"
+            value="5"
+            min="1"
+            max="30"
+            class="w-16 p-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-400 [-webkit-app-region:no-drag]"
+          />
+        </label>
+        <label class="flex justify-between items-center text-sm cursor-pointer">
+          总在最前:
+          <input
+            type="checkbox"
+            id="always-on-top"
+            class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 [-webkit-app-region:no-drag]"
+          />
+        </label>
+
+        <button
+          id="follow-mouse-btn"
+          class="mt-2 w-full py-2 bg-indigo-500 text-white rounded-md text-sm hover:bg-indigo-600 transition shadow-sm [-webkit-app-region:no-drag]"
+        >
+          🖱️ 开启跟随鼠标模式
+        </button>
+        <p class="text-xs text-center text-gray-400 mt-1">
+          按 Cmd/Ctrl+Shift+X 退出跟随模式
+        </p>
+      </div>
     </div>
 
-    <h1 class="text-2xl font-bold text-red-600 mb-4 [-webkit-app-region:drag]">🍅 番茄时钟</h1>
-    
-    <div id="timer" class="text-6xl font-bold my-4 text-gray-800 tabular-nums">25:00</div>
-    
-    <div class="mb-6 text-gray-500" id="status-text">准备开始专注</div>
-
-    <div class="flex justify-between gap-3 mb-6 controls-area">
-      <button id="start-btn" class="flex-1 py-2 px-4 rounded-md transition bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80 disabled:active:opacity-50 cursor-pointer [-webkit-app-region:no-drag]">开始</button>
-      <button id="pause-btn" class="flex-1 py-2 px-4 rounded-md transition bg-yellow-400 text-yellow-900 hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80 disabled:active:opacity-50 cursor-pointer [-webkit-app-region:no-drag]" disabled>暂停</button>
-      <button id="reset-btn" class="flex-1 py-2 px-4 rounded-md transition bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80 disabled:active:opacity-50 cursor-pointer [-webkit-app-region:no-drag]">重置</button>
-    </div>
-
-    <div class="flex flex-col gap-3 text-left border-t border-gray-200 pt-4 settings-area">
-      <label class="flex justify-between items-center text-sm">
-        专注时长 (分钟):
-        <input type="number" id="work-time" value="25" min="1" max="60" class="w-16 p-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-400 [-webkit-app-region:no-drag]">
-      </label>
-      <label class="flex justify-between items-center text-sm">
-        休息时长 (分钟):
-        <input type="number" id="break-time" value="5" min="1" max="30" class="w-16 p-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-400 [-webkit-app-region:no-drag]">
-      </label>
-      <label class="flex justify-between items-center text-sm cursor-pointer">
-        总在最前:
-        <input type="checkbox" id="always-on-top" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 [-webkit-app-region:no-drag]">
-      </label>
-      
-      <button id="follow-mouse-btn" class="mt-2 w-full py-2 bg-indigo-500 text-white rounded-md text-sm hover:bg-indigo-600 transition shadow-sm [-webkit-app-region:no-drag]">
-        🖱️ 开启跟随鼠标模式
-      </button>
-      <p class="text-xs text-center text-gray-400 mt-1">按 Cmd/Ctrl+Shift+X 退出跟随模式</p>
-    </div>
-  </div>
-
-  <script src="renderer.js"></script>
-</body>
+    <script src="renderer.js"></script>
+  </body>
 </html>
