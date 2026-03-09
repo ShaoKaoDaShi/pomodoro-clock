@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+/* 迷你跟随模式样式 */
+.mini-mode {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.mini-mode #timer {
+  font-size: 1.25rem !important; /* text-xl */
+  line-height: 1.75rem !important;
+  color: #4b5563 !important; /* text-gray-600 */
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  border-radius: 9999px !important;
+  padding: 0.25rem 0.75rem !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(229, 231, 235, 0.5) !important; /* border-gray-200 */
+  backdrop-filter: blur(8px) !important;
+  font-weight: 500 !important;
+}
+
+.mini-mode .controls-area,
+.mini-mode .settings-area,
+.mini-mode h1,
+.mini-mode #status-text,
+.mini-mode #drag-region,
+.mini-mode .absolute {
+  display: none !important;
+}

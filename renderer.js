@@ -15,6 +15,9 @@ const pauseBtn = document.getElementById('pause-btn');
 const resetBtn = document.getElementById('reset-btn');
 const workTimeInput = document.getElementById('work-time');
 const breakTimeInput = document.getElementById('break-time');
+const alwaysOnTopCheckbox = document.getElementById('always-on-top');
+const followMouseBtn = document.getElementById('follow-mouse-btn');
+const appContainer = document.getElementById('app-container');
 
 // 格式化时间显示 MM:SS
 function formatTime(seconds) {
@@ -148,6 +151,26 @@ breakTimeInput.addEventListener('change', () => {
     timeLeft = parseInt(breakTimeInput.value) * 60;
     updateDisplay();
   }
+});
+
+// 监听“总在最前”复选框变化
+alwaysOnTopCheckbox.addEventListener('change', () => {
+  ipcRenderer.send('toggle-always-on-top', alwaysOnTopCheckbox.checked);
+});
+
+// 监听跟随鼠标模式按钮
+followMouseBtn.addEventListener('click', () => {
+  // 发送 IPC 消息
+  ipcRenderer.send('start-follow-mouse');
+  
+  // 切换 UI 到迷你模式
+  appContainer.classList.add('mini-mode');
+});
+
+// 监听退出跟随鼠标模式
+ipcRenderer.on('stop-follow-mouse', () => {
+  // 恢复 UI
+  appContainer.classList.remove('mini-mode');
 });
 
 // 初始化显示
