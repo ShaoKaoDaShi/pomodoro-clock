@@ -1,10 +1,10 @@
 {
   "name": "pomodoro-clock",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "build": "npm version patch --no-git-tag-version && tsc && vite build && electron-builder",
     "preview": "vite preview"
   },
   "build": {
