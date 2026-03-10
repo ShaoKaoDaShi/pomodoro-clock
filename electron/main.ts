@@ -20,7 +20,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
     },
     title: "番茄时钟",
-    // icon: path.join(__dirname, 'icon.png') // 如果有图标的话
+    icon: path.join(__dirname, process.env.VITE_DEV_SERVER_URL ? '../public/icon.png' : '../dist/icon.png'),
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {

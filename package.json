@@ -1,6 +1,6 @@
 {
   "name": "pomodoro-clock",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -15,15 +15,18 @@
       "output": "release"
     },
     "mac": {
+      "icon": "build/icon.icns",
       "category": "public.app-category.productivity",
       "target": [
         "dmg"
       ]
     },
     "win": {
+      "icon": "build/icon.ico",
       "target": "nsis"
     },
     "linux": {
+      "icon": "build/icon.png",
       "target": "AppImage"
     },
     "files": [
