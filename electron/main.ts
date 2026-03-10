@@ -1,8 +1,13 @@
-const { app, BrowserWindow, Notification, ipcMain, screen, globalShortcut } = require('electron');
-const path = require('path');
+import { app, BrowserWindow, Notification, ipcMain, screen, globalShortcut } from 'electron';
+import path from 'path';
+
+// Disable security warnings
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
+let win: BrowserWindow | null = null;
 
 function createWindow() {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 400,
     height: 500,
     resizable: false,
@@ -11,30 +16,38 @@ function createWindow() {
     hasShadow: true,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false // For simplicity in this demo, usually better to set true and use preload
+      contextIsolation: false, // For simplicity in this demo, usually better to set true and use preload
+      preload: path.join(__dirname, 'preload.js'),
     },
     title: "番茄时钟",
     // icon: path.join(__dirname, 'icon.png') // 如果有图标的话
   });
 
-  win.loadFile('index.html');
-  // win.webContents.openDevTools(); // 开发调试用
+  if (process.env.VITE_DEV_SERVER_URL) {
+    win.loadURL(process.env.VITE_DEV_SERVER_URL);
+    // win.webContents.openDevTools();
+  } else {
+    // win.loadFile('dist/index.html');
+    win.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
 
   // 注册退出跟随模式的快捷键
   globalShortcut.register('CommandOrControl+Shift+X', () => {
-    win.webContents.send('stop-follow-mouse');
-    
-    // 恢复窗口状态
-    win.setVisibleOnAllWorkspaces(false);
-    win.setIgnoreMouseEvents(false);
-    win.setAlwaysOnTop(false);
-    win.setSize(400, 500);
-    win.center();
-    
-    // 停止位置更新定时器（如果有）
-    if (win.followTimer) {
-      clearInterval(win.followTimer);
-      win.followTimer = null;
+    if (win) {
+      win.webContents.send('stop-follow-mouse');
+      
+      // 恢复窗口状态
+      win.setVisibleOnAllWorkspaces(false);
+      win.setIgnoreMouseEvents(false);
+      win.setAlwaysOnTop(false);
+      win.setSize(400, 500);
+      win.center();
+      
+      // 停止位置更新定时器（如果有）
+      if ((win as any).followTimer) {
+        clearInterval((win as any).followTimer);
+        (win as any).followTimer = null;
+      }
     }
   });
 }
@@ -51,9 +64,9 @@ ipcMain.on('start-follow-mouse', (event) => {
   win.setIgnoreMouseEvents(true); // 忽略鼠标事件
 
   // 启动定时器跟随鼠标
-  if (win.followTimer) clearInterval(win.followTimer);
+  if ((win as any).followTimer) clearInterval((win as any).followTimer);
   
-  win.followTimer = setInterval(() => {
+  (win as any).followTimer = setInterval(() => {
     const point = screen.getCursorScreenPoint();
     // 偏移一点，避免遮挡鼠标焦点
     win.setPosition(point.x + 15, point.y + 15);
