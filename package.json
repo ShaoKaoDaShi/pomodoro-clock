@@ -1,6 +1,6 @@
 {
   "name": "pomodoro-clock",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",

@@ -18,9 +18,19 @@ const App = () => {
   const endTimeRef = useRef<number | null>(null);
 
   // Ref to hold current state for IPC handlers to avoid stale closures
-  const stateRef = useRef({ timeLeft, isWorkSession, isRunning });
+  const stateRef = useRef({
+    timeLeft,
+    isWorkSession,
+    isRunning,
+    endTime: endTimeRef.current,
+  });
   useEffect(() => {
-    stateRef.current = { timeLeft, isWorkSession, isRunning };
+    stateRef.current = {
+      timeLeft,
+      isWorkSession,
+      isRunning,
+      endTime: endTimeRef.current,
+    };
   }, [timeLeft, isWorkSession, isRunning]);
 
   // IPC Listeners Setup
@@ -30,11 +40,26 @@ const App = () => {
 
       const handleTimerUpdate = (
         _event: any,
-        state: { timeLeft: number; isWorkSession: boolean; isRunning: boolean },
+        state: {
+          timeLeft: number;
+          isWorkSession: boolean;
+          isRunning: boolean;
+          endTime: number | null;
+        },
       ) => {
-        setTimeLeft(state.timeLeft);
         setIsWorkSession(state.isWorkSession);
         setIsRunning(state.isRunning);
+        endTimeRef.current = state.endTime;
+
+        if (!state.isRunning) {
+          setTimeLeft(state.timeLeft);
+        } else if (state.endTime) {
+          // If running, immediately calculate time left based on endTime to avoid jump
+          const now = Date.now();
+          const distance = state.endTime - now;
+          const secondsLeft = Math.ceil(distance / 1000);
+          setTimeLeft(secondsLeft > 0 ? secondsLeft : 0);
+        }
       };
 
       ipcRenderer.on("timer-update", handleTimerUpdate);
@@ -54,6 +79,28 @@ const App = () => {
     }
   }, [isFollowWindow]);
 
+  // Local timer for Follow Window to update UI smoothly
+  useEffect(() => {
+    if (!isFollowWindow) return;
+
+    let interval: NodeJS.Timeout;
+
+    if (isRunning) {
+      interval = setInterval(() => {
+        if (endTimeRef.current) {
+          const now = Date.now();
+          const distance = endTimeRef.current - now;
+          const secondsLeft = Math.ceil(distance / 1000);
+          if (secondsLeft >= 0) {
+            setTimeLeft(secondsLeft);
+          }
+        }
+      }, 200);
+    }
+
+    return () => clearInterval(interval);
+  }, [isFollowWindow, isRunning]);
+
   // Broadcaster (Main Window only)
   useEffect(() => {
     if (!isFollowWindow) {
@@ -61,6 +108,7 @@ const App = () => {
         timeLeft,
         isWorkSession,
         isRunning,
+        endTime: endTimeRef.current,
       });
     }
   }, [isFollowWindow, timeLeft, isWorkSession, isRunning]);
