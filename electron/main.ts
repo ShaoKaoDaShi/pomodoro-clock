@@ -54,6 +54,13 @@ function createWindow() {
       win.focus();
     }
   });
+
+  win.once("ready-to-show", () => {
+    if (win) {
+      win.show();
+      createFollowWindow(); // 默认开启跟随模式
+    }
+  });
 }
 
 function closeFollowWindow() {
@@ -73,10 +80,11 @@ function closeFollowWindow() {
   }
 }
 
-// 监听跟随鼠标模式开启
-ipcMain.on("start-follow-mouse", (event) => {
+function createFollowWindow() {
   if (followWin) {
-    followWin.focus();
+    if (!followWin.isDestroyed()) {
+      followWin.focus();
+    }
     return;
   }
 
@@ -136,6 +144,19 @@ ipcMain.on("start-follow-mouse", (event) => {
   if (win && !win.isDestroyed()) {
     win.webContents.send("follow-mode-changed", true);
   }
+}
+
+// 监听跟随鼠标模式开启
+ipcMain.on("start-follow-mouse", (event) => {
+  createFollowWindow();
+});
+
+// 检查跟随模式状态
+ipcMain.on("check-follow-status", (event) => {
+  event.sender.send(
+    "follow-mode-changed",
+    !!(followWin && !followWin.isDestroyed()),
+  );
 });
 
 // 监听跟随鼠标模式关闭

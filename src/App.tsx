@@ -169,6 +169,10 @@ const App = () => {
       setIsFollowActive(isActive);
     };
     ipcRenderer.on("follow-mode-changed", handleFollowChange);
+
+    // Check initial status
+    ipcRenderer.send("check-follow-status");
+
     return () => {
       ipcRenderer.removeListener("follow-mode-changed", handleFollowChange);
     };
