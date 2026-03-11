@@ -15,6 +15,7 @@ const App = () => {
   const isFollowWindow = window.location.hash === "#follow";
 
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const endTimeRef = useRef<number | null>(null);
 
   // Ref to hold current state for IPC handlers to avoid stale closures
   const stateRef = useRef({ timeLeft, isWorkSession, isRunning });
@@ -118,18 +119,24 @@ const App = () => {
     if (isFollowWindow) return; // Follow window is passive
 
     setIsRunning(true);
+    // 使用 Date.now() 计算目标时间，防止浏览器后台节流导致计时器变慢或停止
+    const endTime = Date.now() + timeLeft * 1000;
+    endTimeRef.current = endTime;
 
     timerIntervalRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        const next = prev - 1;
+      const now = Date.now();
+      if (!endTimeRef.current) return;
 
-        if (prev <= 1) {
-          timerComplete();
-          return 0;
-        }
-        return next;
-      });
-    }, 1000);
+      const distance = endTimeRef.current - now;
+      const secondsLeft = Math.ceil(distance / 1000);
+
+      if (secondsLeft <= 0) {
+        setTimeLeft(0);
+        timerComplete();
+      } else {
+        setTimeLeft(secondsLeft);
+      }
+    }, 200);
   };
 
   const pauseTimer = () => {
