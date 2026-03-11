@@ -8,9 +8,61 @@ const App = () => {
   const [workTime, setWorkTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(false);
-  const [isMiniMode, setIsMiniMode] = useState(false);
+  const [isMiniMode, setIsMiniMode] = useState(
+    window.location.hash === "#follow",
+  );
+  const [isFollowActive, setIsFollowActive] = useState(false);
+  const isFollowWindow = window.location.hash === "#follow";
 
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Ref to hold current state for IPC handlers to avoid stale closures
+  const stateRef = useRef({ timeLeft, isWorkSession, isRunning });
+  useEffect(() => {
+    stateRef.current = { timeLeft, isWorkSession, isRunning };
+  }, [timeLeft, isWorkSession, isRunning]);
+
+  // IPC Listeners Setup
+  useEffect(() => {
+    if (isFollowWindow) {
+      ipcRenderer.send("request-timer-state");
+
+      const handleTimerUpdate = (
+        _event: any,
+        state: { timeLeft: number; isWorkSession: boolean; isRunning: boolean },
+      ) => {
+        setTimeLeft(state.timeLeft);
+        setIsWorkSession(state.isWorkSession);
+        setIsRunning(state.isRunning);
+      };
+
+      ipcRenderer.on("timer-update", handleTimerUpdate);
+      return () => {
+        ipcRenderer.removeListener("timer-update", handleTimerUpdate);
+      };
+    } else {
+      // Main window listens for state requests from follow window
+      const handleRequestState = () => {
+        ipcRenderer.send("timer-update", stateRef.current);
+      };
+
+      ipcRenderer.on("request-timer-state", handleRequestState);
+      return () => {
+        ipcRenderer.removeListener("request-timer-state", handleRequestState);
+      };
+    }
+  }, [isFollowWindow]);
+
+  // Broadcaster (Main Window only)
+  useEffect(() => {
+    if (!isFollowWindow) {
+      ipcRenderer.send("timer-update", {
+        timeLeft,
+        isWorkSession,
+        isRunning,
+      });
+    }
+  }, [isFollowWindow, timeLeft, isWorkSession, isRunning]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -63,15 +115,19 @@ const App = () => {
 
   const startTimer = () => {
     if (isRunning) return;
+    if (isFollowWindow) return; // Follow window is passive
+
     setIsRunning(true);
 
     timerIntervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
+        const next = prev - 1;
+
         if (prev <= 1) {
           timerComplete();
           return 0;
         }
-        return prev - 1;
+        return next;
       });
     }, 1000);
   };
@@ -94,8 +150,12 @@ const App = () => {
   };
 
   const handleFollowMouse = () => {
-    ipcRenderer.send("start-follow-mouse");
-    setIsMiniMode(true);
+    if (isFollowActive) {
+      ipcRenderer.send("stop-follow-mouse");
+    } else {
+      ipcRenderer.send("start-follow-mouse");
+    }
+    // setIsMiniMode(true); // Don't hide main UI
   };
 
   const handleAlwaysOnTopChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,12 +164,13 @@ const App = () => {
   };
 
   useEffect(() => {
-    const stopFollowMouseHandler = () => {
-      setIsMiniMode(false);
+    // Listen for follow mode status changes from main process
+    const handleFollowChange = (_: any, isActive: boolean) => {
+      setIsFollowActive(isActive);
     };
-    ipcRenderer.on("stop-follow-mouse", stopFollowMouseHandler);
+    ipcRenderer.on("follow-mode-changed", handleFollowChange);
     return () => {
-      ipcRenderer.removeListener("stop-follow-mouse", stopFollowMouseHandler);
+      ipcRenderer.removeListener("follow-mode-changed", handleFollowChange);
     };
   }, []);
 
@@ -317,9 +378,13 @@ const App = () => {
             </label>
 
             <button
-              className="text-gray-400 hover:text-indigo-500 transition-colors p-2 rounded-full hover:bg-indigo-50"
+              className={`transition-colors p-2 rounded-full ${
+                isFollowActive
+                  ? "text-indigo-500 bg-indigo-50 hover:bg-indigo-100"
+                  : "text-gray-400 hover:text-indigo-500 hover:bg-indigo-50"
+              }`}
               onClick={handleFollowMouse}
-              title="开启跟随模式"
+              title={isFollowActive ? "关闭跟随模式" : "开启跟随模式"}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
