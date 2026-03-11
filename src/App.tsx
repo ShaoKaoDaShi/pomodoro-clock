@@ -72,9 +72,22 @@ const App = () => {
         ipcRenderer.send("timer-update", stateRef.current);
       };
 
+      const handleTimerFinishedCheck = () => {
+        // 主进程发来通知说时间到了，作为兜底
+        if (stateRef.current.isRunning) {
+          setTimeLeft(0);
+          timerComplete();
+        }
+      };
+
       ipcRenderer.on("request-timer-state", handleRequestState);
+      ipcRenderer.on("timer-finished-check", handleTimerFinishedCheck);
       return () => {
         ipcRenderer.removeListener("request-timer-state", handleRequestState);
+        ipcRenderer.removeListener(
+          "timer-finished-check",
+          handleTimerFinishedCheck,
+        );
       };
     }
   }, [isFollowWindow]);
@@ -160,6 +173,9 @@ const App = () => {
       setIsWorkSession(true);
       setTimeLeft(workTime * 60);
     }
+
+    // 清除主进程兜底
+    ipcRenderer.send("stop-timer-check");
   };
 
   const startTimer = () => {
@@ -170,6 +186,11 @@ const App = () => {
     // 使用 Date.now() 计算目标时间，防止浏览器后台节流导致计时器变慢或停止
     const endTime = Date.now() + timeLeft * 1000;
     endTimeRef.current = endTime;
+
+    // 告诉主进程，在 timeLeft 秒后提醒我，防止我睡着了
+    if (!isFollowWindow) {
+      ipcRenderer.send("start-timer-check", timeLeft * 1000);
+    }
 
     timerIntervalRef.current = setInterval(() => {
       const now = Date.now();
@@ -193,6 +214,7 @@ const App = () => {
       clearInterval(timerIntervalRef.current);
     }
     setIsRunning(false);
+    ipcRenderer.send("stop-timer-check");
   };
 
   const resetTimer = () => {
@@ -200,6 +222,7 @@ const App = () => {
       clearInterval(timerIntervalRef.current);
     }
     setIsRunning(false);
+    ipcRenderer.send("stop-timer-check");
     setIsWorkSession(true);
     setTimeLeft(workTime * 60);
   };

@@ -14,6 +14,7 @@ process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
 let win: BrowserWindow | null = null;
 let followWin: BrowserWindow | null = null;
 let followTimer: NodeJS.Timeout | null = null;
+let mainTimer: NodeJS.Timeout | null = null;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -27,6 +28,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false, // For simplicity in this demo, usually better to set true and use preload
       preload: path.join(__dirname, "preload.js"),
+      backgroundThrottling: false, // 防止后台运行时定时器停止
     },
     title: "番茄时钟",
     icon: path.join(
@@ -175,6 +177,24 @@ ipcMain.on("request-timer-state", (event) => {
   // 跟随窗口请求状态，转发给主窗口
   if (win && !win.isDestroyed()) {
     win.webContents.send("request-timer-state");
+  }
+});
+
+// 启动/停止主进程定时器兜底
+ipcMain.on("start-timer-check", (event, durationMs) => {
+  if (mainTimer) clearTimeout(mainTimer);
+  mainTimer = setTimeout(() => {
+    // 时间到，通知渲染进程
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("timer-finished-check");
+    }
+  }, durationMs);
+});
+
+ipcMain.on("stop-timer-check", () => {
+  if (mainTimer) {
+    clearTimeout(mainTimer);
+    mainTimer = null;
   }
 });
 
