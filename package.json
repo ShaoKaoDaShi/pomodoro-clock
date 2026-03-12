@@ -4,8 +4,14 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "npm version patch --no-git-tag-version && tsc && vite build && electron-builder",
+    "build": "tsc && vite build && electron-builder",
+    "release": "npm version patch && git push && git push --tags",
+    "release:ci": "tsc && vite build && electron-builder --publish always",
     "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShaoKaoDaShi/pomodoro-clock.git"
   },
   "build": {
     "appId": "com.pomodoro.clock",
@@ -13,6 +19,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ShaoKaoDaShi",
+        "repo": "pomodoro-clock"
+      }
+    ],
     "mac": {
       "icon": "build/icon.icns",
       "category": "public.app-category.productivity",
