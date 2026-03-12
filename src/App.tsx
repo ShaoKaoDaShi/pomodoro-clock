@@ -262,6 +262,44 @@ const App = () => {
     };
   }, []);
 
+  // Window resize handler
+  useEffect(() => {
+    if (isFollowWindow) return;
+
+    const updateWindowSize = () => {
+      const container = document.getElementById("app-container");
+      if (container) {
+        // Get the actual rendered size
+        const { offsetWidth, offsetHeight } = container;
+
+        // Add buffer for shadows (shadow-2xl) and rounded corners
+        // The container is centered in the window
+        // We need enough space for the shadow to be visible
+        const shadowBuffer = 60;
+
+        ipcRenderer.send("resize-window", {
+          width: offsetWidth + shadowBuffer,
+          height: offsetHeight + shadowBuffer,
+        });
+      }
+    };
+
+    // Create observer to watch for size changes
+    const observer = new ResizeObserver(() => {
+      // Use requestAnimationFrame to debounce and ensure render is complete
+      requestAnimationFrame(updateWindowSize);
+    });
+
+    const container = document.getElementById("app-container");
+    if (container) {
+      observer.observe(container);
+      // Initial sizing
+      updateWindowSize();
+    }
+
+    return () => observer.disconnect();
+  }, [isFollowWindow]);
+
   // Update time when settings change and not running
   useEffect(() => {
     if (!isRunning) {
@@ -296,16 +334,12 @@ const App = () => {
     <div
       className={`flex justify-center items-center h-screen w-screen overflow-hidden select-none bg-transparent transition-colors duration-500`}
     >
-      {/* 拖拽区域 */}
-      <div
-        className={`fixed top-0 left-0 w-full h-8 z-50 [-webkit-app-region:drag] ${isMiniMode ? "hidden" : ""}`}
-        id="drag-region"
-      ></div>
+      {/* 拖拽区域 - Removed separate drag region, moved to app-container */}
 
       <div
         id="app-container"
         className={`
-          relative transition-all duration-300 ease-in-out
+          relative transition-all duration-300 ease-in-out [-webkit-app-region:drag]
           ${
             isMiniMode
               ? "mini-mode"
@@ -313,16 +347,6 @@ const App = () => {
           }
         `}
       >
-        {/* 关闭按钮 (模拟) */}
-        <div
-          className={`absolute top-4 right-4 flex gap-1 z-50 group ${isMiniMode ? "hidden" : ""}`}
-        >
-          <div
-            className="w-3 h-3 rounded-full bg-slate-300 group-hover:bg-red-500 cursor-pointer transition-colors duration-200"
-            onClick={() => window.close()}
-          ></div>
-        </div>
-
         {/* Header */}
         <div className={`text-center mb-6 ${isMiniMode ? "hidden" : ""}`}>
           <span
@@ -362,7 +386,7 @@ const App = () => {
 
         {/* Main Controls */}
         <div
-          className={`flex justify-center gap-4 mb-8 controls-area ${isMiniMode ? "hidden" : ""}`}
+          className={`flex justify-center gap-4 mb-8 controls-area [-webkit-app-region:no-drag] ${isMiniMode ? "hidden" : ""}`}
         >
           {!isRunning ? (
             <button
@@ -404,7 +428,7 @@ const App = () => {
         <div
           className={`
           flex flex-col gap-4 text-left pt-6 border-t ${theme.border} 
-          settings-area transition-all duration-300
+          settings-area transition-all duration-300 [-webkit-app-region:no-drag]
           ${isMiniMode ? "hidden" : ""}
         `}
         >

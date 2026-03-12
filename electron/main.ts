@@ -25,7 +25,8 @@ function createWindow() {
     width: 400,
     height: 500,
     resizable: false,
-    frame: false, // 移除边框
+    // titleBarStyle: "hidden", // 显示红绿灯但隐藏标题栏背景
+    frame: false,
     transparent: true, // 开启透明
     hasShadow: true,
     webPreferences: {
@@ -263,6 +264,13 @@ ipcMain.on("toggle-always-on-top", (event, flag) => {
   const win = BrowserWindow.getAllWindows()[0];
   if (win) {
     win.setAlwaysOnTop(flag);
+  }
+});
+
+// 监听调整窗口大小请求
+ipcMain.on("resize-window", (event, { width, height }) => {
+  if (win && !win.isDestroyed()) {
+    win.setSize(width, height, true);
   }
 });
 
