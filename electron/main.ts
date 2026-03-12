@@ -5,6 +5,9 @@ import {
   ipcMain,
   screen,
   globalShortcut,
+  Tray,
+  Menu,
+  nativeImage,
 } from "electron";
 import path from "path";
 
@@ -13,6 +16,7 @@ process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
 
 let win: BrowserWindow | null = null;
 let followWin: BrowserWindow | null = null;
+let tray: Tray | null = null;
 let followTimer: NodeJS.Timeout | null = null;
 let mainTimer: NodeJS.Timeout | null = null;
 
@@ -148,6 +152,49 @@ function createFollowWindow() {
   }
 }
 
+function createTray() {
+  const iconPath = path.join(
+    __dirname,
+    process.env.VITE_DEV_SERVER_URL ? "../public/icon.png" : "../dist/icon.png",
+  );
+
+  const icon = nativeImage.createFromPath(iconPath);
+  tray = new Tray(icon.resize({ width: 16, height: 16 }));
+  tray.setToolTip("番茄时钟");
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "显示主窗口",
+      click: () => {
+        if (win) {
+          if (win.isMinimized()) win.restore();
+          win.show();
+          win.focus();
+        } else {
+          createWindow();
+        }
+      },
+    },
+    { type: "separator" },
+    {
+      label: "退出",
+      click: () => {
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
+
+  tray.on("double-click", () => {
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+    }
+  });
+}
+
 // 监听跟随鼠标模式开启
 ipcMain.on("start-follow-mouse", (event) => {
   createFollowWindow();
@@ -226,6 +273,7 @@ if (process.platform === "win32") {
 
 app.whenReady().then(() => {
   createWindow();
+  createTray();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
