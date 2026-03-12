@@ -23,6 +23,8 @@ const App = () => {
     isWorkSession,
     isRunning,
     endTime: endTimeRef.current,
+    workTime,
+    breakTime,
   });
   useEffect(() => {
     stateRef.current = {
@@ -30,8 +32,10 @@ const App = () => {
       isWorkSession,
       isRunning,
       endTime: endTimeRef.current,
+      workTime,
+      breakTime,
     };
-  }, [timeLeft, isWorkSession, isRunning]);
+  }, [timeLeft, isWorkSession, isRunning, workTime, breakTime]);
 
   // IPC Listeners Setup
   useEffect(() => {
@@ -145,7 +149,7 @@ const App = () => {
     gainNode.connect(ctx.destination);
 
     oscillator.type = "sine";
-    oscillator.frequency.value = isWorkSession ? 880 : 523; // Different tones
+    oscillator.frequency.value = stateRef.current.isWorkSession ? 880 : 523; // Different tones
     gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
 
     oscillator.start();
@@ -164,14 +168,16 @@ const App = () => {
     setIsRunning(false);
     playSound();
 
-    if (isWorkSession) {
+    const currentState = stateRef.current;
+
+    if (currentState.isWorkSession) {
       sendNotification("专注完成", "做得好！休息一下吧。");
       setIsWorkSession(false);
-      setTimeLeft(breakTime * 60);
+      setTimeLeft(currentState.breakTime * 60);
     } else {
       sendNotification("休息结束", "准备好开始新的专注了吗？");
       setIsWorkSession(true);
-      setTimeLeft(workTime * 60);
+      setTimeLeft(currentState.workTime * 60);
     }
 
     // 清除主进程兜底
