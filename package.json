@@ -48,6 +48,7 @@
     ]
   },
   "description": "Electron Pomodoro Clock",
+  "author": "ShaoKaoDaShi",
   "license": "MIT",
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.1",
