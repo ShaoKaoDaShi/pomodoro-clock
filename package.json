@@ -4,9 +4,9 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "build": "vite build && electron-builder",
     "release": "npm version patch && git push && git push --tags",
-    "release:ci": "tsc && vite build && electron-builder --publish always",
+    "release:ci": "vite build && electron-builder --publish always",
     "preview": "vite preview"
   },
   "repository": {
@@ -53,8 +53,6 @@
     "@tailwindcss/cli": "^4.2.1",
     "@tailwindcss/vite": "^4.2.1",
     "@types/node": "^25.4.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.27",
     "electron": "^40.8.0",
     "electron-builder": "^26.8.1",
