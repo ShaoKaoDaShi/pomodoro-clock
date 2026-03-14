@@ -84,14 +84,34 @@ const App = () => {
         }
       };
 
+      // Listen for tray menu commands
+      const handleStartTimer = () => {
+        startTimer();
+      };
+
+      const handlePauseTimer = () => {
+        pauseTimer();
+      };
+
+      const handleResetTimer = () => {
+        resetTimer();
+      };
+
       ipcRenderer.on("request-timer-state", handleRequestState);
       ipcRenderer.on("timer-finished-check", handleTimerFinishedCheck);
+      ipcRenderer.on("start-timer", handleStartTimer);
+      ipcRenderer.on("pause-timer", handlePauseTimer);
+      ipcRenderer.on("reset-timer", handleResetTimer);
+
       return () => {
         ipcRenderer.removeListener("request-timer-state", handleRequestState);
         ipcRenderer.removeListener(
           "timer-finished-check",
           handleTimerFinishedCheck,
         );
+        ipcRenderer.removeListener("start-timer", handleStartTimer);
+        ipcRenderer.removeListener("pause-timer", handlePauseTimer);
+        ipcRenderer.removeListener("reset-timer", handleResetTimer);
       };
     }
   }, [isFollowWindow]);

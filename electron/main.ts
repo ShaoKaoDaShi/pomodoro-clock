@@ -178,6 +178,31 @@ function createTray() {
     },
     { type: "separator" },
     {
+      label: "开始计时",
+      click: () => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("start-timer");
+        }
+      },
+    },
+    {
+      label: "暂停计时",
+      click: () => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("pause-timer");
+        }
+      },
+    },
+    {
+      label: "重置计时",
+      click: () => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("reset-timer");
+        }
+      },
+    },
+    { type: "separator" },
+    {
       label: "退出",
       click: () => {
         app.quit();
@@ -261,8 +286,7 @@ ipcMain.on("show-notification", (event, { title, body }) => {
 
 // 监听“总在最前”切换请求
 ipcMain.on("toggle-always-on-top", (event, flag) => {
-  const win = BrowserWindow.getAllWindows()[0];
-  if (win) {
+  if (win && !win.isDestroyed()) {
     win.setAlwaysOnTop(flag);
   }
 });
