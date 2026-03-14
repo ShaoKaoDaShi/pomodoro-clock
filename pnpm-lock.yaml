@@ -7,13 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
-      react-dom:
-        specifier: ^19.2.4
-        version: 19.2.4(react@19.2.4)
     devDependencies:
       '@tailwindcss/cli':
         specifier: ^4.2.1
@@ -39,6 +32,12 @@ importers:
       postcss:
         specifier: ^8.5.8
         version: 8.5.8
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.4(react@19.2.4)
       tailwindcss:
         specifier: ^4.2.1
         version: 4.2.1

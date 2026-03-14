@@ -16,6 +16,7 @@
   "build": {
     "appId": "com.pomodoro.clock",
     "productName": "番茄时钟",
+    "asar": true,
     "directories": {
       "output": "release"
     },
@@ -23,7 +24,8 @@
       {
         "provider": "github",
         "owner": "ShaoKaoDaShi",
-        "repo": "pomodoro-clock"
+        "repo": "pomodoro-clock",
+        "releaseType": "release"
       }
     ],
     "mac": {
@@ -44,7 +46,8 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "package.json"
+      "package.json",
+      "!**/*.map"
     ]
   },
   "description": "Electron Pomodoro Clock",
@@ -63,10 +66,9 @@
     "typescript": "^5.9.3",
     "vite": "^6.4.1",
     "vite-plugin-electron": "^0.29.0",
-    "vite-plugin-electron-renderer": "^0.14.6"
-  },
-  "dependencies": {
+    "vite-plugin-electron-renderer": "^0.14.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
-  }
+  },
+  "dependencies": {}
 }
