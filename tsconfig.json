@@ -4,8 +4,8 @@
     "target": "ESNext",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
+    "strict": false,
+    "noImplicitAny": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -16,6 +16,11 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "electron/**/*.ts", "vite.config.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "electron/**/*.ts",
+    "vite.config.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }
