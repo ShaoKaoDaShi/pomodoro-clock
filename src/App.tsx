@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ipcRenderer } from "electron";
 
 const App = () => {
@@ -340,6 +340,7 @@ const App = () => {
         buttonSecondary: "bg-rose-100 text-rose-700 hover:bg-rose-200",
         ring: "focus:ring-rose-200",
         border: "border-rose-100",
+        mini: "bg-rose-50/90 text-rose-600 border-rose-200/50 shadow-rose-100/50",
       }
     : {
         bg: "from-teal-50 to-emerald-50",
@@ -348,6 +349,7 @@ const App = () => {
         buttonSecondary: "bg-teal-100 text-teal-700 hover:bg-teal-200",
         ring: "focus:ring-teal-200",
         border: "border-teal-100",
+        mini: "bg-teal-50/90 text-teal-600 border-teal-200/50 shadow-teal-100/50",
       };
 
   return (
@@ -381,8 +383,12 @@ const App = () => {
           <div
             id="timer"
             className={`
-            font-mono font-light tracking-tighter text-gray-800 tabular-nums transition-all duration-300
-            ${isMiniMode ? "text-sm font-semibold" : "text-7xl mb-2"}
+            font-mono tracking-tighter tabular-nums transition-all duration-300
+            ${
+              isMiniMode
+                ? `text-sm font-bold px-3 py-1 rounded-full border backdrop-blur-md shadow-sm ${theme.mini}`
+                : "text-7xl mb-2 font-light text-gray-800"
+            }
           `}
           >
             {formatTime(timeLeft)}
@@ -521,16 +527,15 @@ const App = () => {
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
-                fill="none"
                 viewBox="0 0 24 24"
+                fill="none"
                 stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                />
+                <path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7" />
+                <rect x="12" y="13" width="10" height="7" rx="2" />
               </svg>
             </button>
           </div>

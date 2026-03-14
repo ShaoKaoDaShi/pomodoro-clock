@@ -9,17 +9,8 @@
 }
 
 .mini-mode #timer {
-  font-size: 0.875rem !important; /* text-sm */
-  line-height: 1.25rem !important;
-  color: #1f2937 !important; /* text-gray-800 */
-  background-color: rgba(255, 255, 255, 0.85) !important;
-  border-radius: 9999px !important;
-  padding: 0.125rem 0.625rem !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-  border: 0 !important;
+  /* 由 Tailwind 类控制，这里仅保留必要的重置或微调 */
   outline: none !important;
-  backdrop-filter: blur(8px) !important;
-  font-weight: 600 !important;
 }
 
 .mini-mode .controls-area,
