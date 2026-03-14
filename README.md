@@ -1,29 +1,47 @@
 # Pomodoro Clock (番茄时钟)
 
-A modern, feature-rich Pomodoro timer desktop application built with Electron, React, TypeScript, and Tailwind CSS.
+A modern, feature-rich, and minimalist Pomodoro timer desktop application built with **Electron**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
-## Features
+## 📸 Screenshots
 
-- **Standard Pomodoro Timer**: Customizable work and break sessions to boost productivity.
-- **Follow Mouse Mode**: A unique mini-mode that follows your cursor, keeping the timer visible without being intrusive.
-- **Always on Top**: Toggle the window to stay on top of other applications.
-- **System Notifications**: Get notified when a session starts or ends.
-- **Global Shortcuts**: 
-  - `CommandOrControl+Shift+X`: Exit follow mouse mode.
+| Main Interface (Focus Mode) | Break Mode | Follow Mouse Mode |
+|:---------------------------:|:----------:|:-----------------:|
+| ![Main Interface](./screenshots/focus-mode.png) | ![Break Mode](./screenshots/break-mode.png) | ![Follow Mouse](./screenshots/follow-mode.png) |
 
-## Tech Stack
+## ✨ Features
+
+### 🎨 Design Philosophy
+- **Minimalism**: Borderless window design, focusing on core functionality. Hidden controls that appear on hover to reduce visual clutter.
+- **Emotional Design**: 
+  - **Focus Mode**: Warm gradients (Rose to Orange) to inspire energy and focus.
+  - **Break Mode**: Cool gradients (Teal to Emerald) to promote relaxation.
+  - **Micro-interactions**: Smooth transitions and hover effects for a delightful user experience.
+
+### 🚀 Core Functionality
+- **Standard Pomodoro Timer**: Customizable work and break sessions.
+- **Follow Mouse Mode (Mini Mode)**: A unique, non-intrusive mode where a tiny timer follows your cursor.
+  - The window becomes a "ghost" (ignores mouse events), allowing you to click through it.
+  - Always stays on top of other windows.
+- **Always on Top**: Toggle the main window to stay on top of other applications.
+- **System Notifications**: Native system notifications when a session starts or ends.
+- **Audio Feedback**: Simple, generated tones for timer completion (no external assets needed).
+
+### ⌨️ Global Shortcuts
+- `CommandOrControl+Shift+X`: **Exit Follow Mouse Mode** and restore the main window.
+
+## 🛠 Tech Stack
 
 - **Electron**: Cross-platform desktop application framework.
-- **React**: UI library for building the interface.
-- **TypeScript**: Static typing for better code quality and developer experience.
-- **Tailwind CSS**: Utility-first CSS framework for styling.
-- **Vite**: Fast build tool and development server.
+- **React 19**: The latest version of the UI library.
+- **TypeScript**: Static typing for robust code.
+- **Tailwind CSS v4**: Utility-first CSS framework (configured via `@tailwindcss/vite`).
+- **Vite**: Ultra-fast build tool and development server.
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-Ensure you have Node.js and pnpm installed on your machine.
+Ensure you have **Node.js** and **pnpm** installed on your machine.
 
 ### Installation
 
@@ -53,9 +71,9 @@ Build the application for production:
 pnpm build
 ```
 
-This command runs type checks, bundles the code, and packages the application using `electron-builder`. The output files will be in the `release/` directory.
+The output files will be in the `release/` directory.
 
-## Project Structure
+## 📂 Project Structure
 
 - `electron/`: Main process code (window management, system events).
 - `src/`: Renderer process code (React UI, timer logic).
@@ -63,6 +81,6 @@ This command runs type checks, bundles the code, and packages the application us
 - `dist-electron/`: Compiled Main process files.
 - `release/`: Packaged application installers.
 
-## License
+## 📄 License
 
 [MIT](LICENSE)
