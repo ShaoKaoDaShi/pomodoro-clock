@@ -47,7 +47,9 @@
       "dist/**/*",
       "dist-electron/**/*",
       "package.json",
-      "!**/*.map"
+      "!**/*.map",
+      "!node_modules/react",
+      "!node_modules/react-dom"
     ]
   },
   "description": "Electron Pomodoro Clock",
@@ -66,9 +68,10 @@
     "typescript": "^5.9.3",
     "vite": "^6.4.1",
     "vite-plugin-electron": "^0.29.0",
-    "vite-plugin-electron-renderer": "^0.14.6",
+    "vite-plugin-electron-renderer": "^0.14.6"
+  },
+  "dependencies": {
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
-  },
-  "dependencies": {}
+  }
 }
