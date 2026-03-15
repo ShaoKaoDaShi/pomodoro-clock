@@ -1,87 +1,141 @@
-# 项目设计与业务逻辑文档
+# Design
 
-本文档详细记录了番茄时钟应用的业务逻辑、设计理念及关键技术实现，旨在为后续开发、维护和功能扩展提供参考。
+This document explains why the Pomodoro Clock is built the way it is and how the current architecture supports that product intent. It focuses on interaction goals, timer behavior, process boundaries, and synchronization responsibilities rather than setup or build workflow. For repository workflow and file-level maintenance guidance, see `AGENTS.md`.
 
-## 1. 设计理念
+## Design Goals
 
-本项目遵循 **“极简主义”** 和 **“情感化设计”** 原则，旨在提供一个既高效又令人愉悦的专注工具。
+The app aims to be a lightweight focus companion rather than a general task manager. The product scope stays intentionally narrow: help the user enter a Focus or Break session quickly, keep the timer visible when needed, and reduce friction around switching contexts.
 
-### 1.1 极简主义 (Minimalism)
-*   **无边框设计**：去除传统的操作系统窗口边框，使用自定义的拖拽区域和关闭按钮，最大化利用屏幕空间，减少视觉干扰。
-*   **核心功能优先**：界面仅保留最核心的计时器、控制按钮和必要的设置项。跟随鼠标模式下，进一步隐藏所有非必要元素，仅显示时间和极简状态。
-*   **隐藏式交互**：部分次要功能（如关闭按钮）在鼠标悬停时才突显，保持界面整洁。
+Three goals shape the design:
 
-### 1.2 情感化设计 (Emotional Design)
-*   **双模式主题**：
-    *   **专注模式 (Focus Mode)**：采用 **玫瑰红 (Rose)** 到 **橙色 (Orange)** 的暖色调渐变。暖色调能激发活力、紧迫感和专注力。
-    *   **休息模式 (Break Mode)**：采用 **青色 (Teal)** 到 **翡翠绿 (Emerald)** 的冷色调渐变。冷色调有助于放松心情、缓解视觉疲劳。
-*   **微交互 (Micro-interactions)**：
-    *   按钮悬停时的上浮效果和阴影加深。
-    *   模式切换时的背景色平滑过渡 (`transition-colors duration-500`)。
-    *   计时器数字的等宽字体 (`tabular-nums`) 避免跳动。
+- Minimal distraction: the main window removes standard window chrome and keeps the screen centered on the active timer state.
+- Emotional clarity: Focus and Break sessions feel different through color, copy, and motion so the user can read the current mode at a glance.
+- Ambient availability: the timer should remain easy to check without requiring the full control window to stay front and center, mainly through always-on-top support and the lightweight follow window.
 
-## 2. 业务逻辑
+That combination is why the app prefers a polished single-purpose interface over feature breadth. It is designed to feel present, calm, and immediate.
 
-### 2.1 计时器核心逻辑
-*   **状态管理**：使用 React Hook (`useState`, `useRef`) 管理计时器状态。
-    *   `timeLeft`: 剩余时间（秒）。
-    *   `isRunning`: 是否正在计时。
-    *   `isWorkSession`: 当前是专注时段还是休息时段。
-*   **倒计时机制**：
-    *   使用 `setInterval` 每秒递减 `timeLeft`。
-    *   当 `timeLeft` 归零时，触发 `timerComplete`。
-*   **自动流转**：
-    *   **专注结束** -> 播放提示音 -> 发送通知 -> 自动切换到 **休息模式** -> 重置时间为休息时长。
-    *   **休息结束** -> 播放提示音 -> 发送通知 -> 自动切换到 **专注模式** -> 重置时间为专注时长。
+## Interaction and Visual Principles
 
-### 2.2 模式与配置
-*   **时间设置**：
-    *   用户可自定义“专注时长”和“休息时长”。
-    *   设置仅在非运行状态下生效，实时更新当前的 `timeLeft`。
-*   **总在最前 (Always on Top)**：
-    *   通过 IPC (`toggle-always-on-top`) 控制 Electron 窗口的 `setAlwaysOnTop` 属性。
-    *   允许用户在工作时保持时钟可见，避免被其他窗口遮挡。
+The renderer keeps the interaction model simple and mode-aware.
 
-### 2.3 跟随鼠标模式 (Mini Mode)
-这是一项特色功能，旨在提供极致的“无感陪伴”。
+- The primary view is a frameless card with a large timer, direct session switcher, start/pause/reset controls, and a compact settings area.
+- Focus and Break sessions use different visual themes so the user can read intent from color alone: warmer energy for focus, cooler calm for rest.
+- The timer uses tabular numerals and high contrast sizing so the countdown remains legible and visually stable.
+- Transitions are subtle and supportive. The interface uses smooth color and layout changes to make mode changes feel deliberate without turning the app into an animation-heavy experience.
+- Follow Mouse Mode strips the UI down further. The design becomes a tiny translucent capsule that surfaces only time and a short status label.
 
-*   **触发**：点击界面上的“跟随鼠标”图标。
-*   **表现**：
-    *   **UI 变化**：隐藏所有控制按钮、标题、背景板，仅保留半透明的胶囊状计时器和极简状态文字。
-    *   **窗口行为**：
-        *   窗口尺寸缩小至 `100x40`。
-        *   开启 `ignoreMouseEvents`（忽略鼠标点击），使得时钟成为“幽灵”窗口，不会阻挡用户点击下方内容。
-        *   设置最高层级置顶 (`screen-saver` 级别)。
-*   **跟随逻辑 (Main Process)**：
-    *   主进程启动一个高频定时器（约 60fps）。
-    *   使用 `screen.getCursorScreenPoint()` 获取鼠标实时坐标。
-    *   设置窗口位置为鼠标坐标 + 偏移量 `(x + 15, y + 15)`，确保不遮挡鼠标焦点。
-*   **退出**：
-    *   注册全局快捷键 `CommandOrControl+Shift+X`。
-    *   触发时恢复窗口尺寸、位置居中、取消鼠标忽略、恢复完整 UI。
+The result is a UI that prioritizes immediate comprehension. Full controls are available in the main window, while secondary or ambient states intentionally remove unnecessary elements.
 
-### 2.4 系统交互
-*   **通知**：利用 Electron `Notification` API 发送原生系统通知，点击通知可激活应用窗口。
-*   **声音**：使用 Web Audio API 生成简单的正弦波振荡器 (Oscillator) 播放提示音，无需加载外部音频文件，轻量且高效。
-    *   专注结束音调：880Hz (A5)
-    *   休息结束音调：523Hz (C5)
+## Pomodoro Business Rules
 
-## 3. 技术架构摘要
+The timer model is intentionally small and predictable.
 
-*   **前端框架**：React 19 + TypeScript
-*   **构建工具**：Vite + Electron
-*   **样式库**：Tailwind CSS v4 (使用 `@tailwindcss/vite` 插件)
-*   **通信机制**：Electron IPC (Inter-Process Communication)
-    *   Renderer -> Main: `ipcRenderer.send`
-    *   Main -> Renderer: `win.webContents.send`
+- A session is always either `work` or `break` internally, corresponding to the user-facing Focus and Break modes.
+- The user can configure Focus and Break durations independently.
+- Duration changes apply to the visible timer only while the timer is not running.
+- Starting a session begins a countdown from the current `timeLeft` value.
+- Pausing preserves the remaining time.
+- Resetting stops the current session and restores the default duration for the current mode.
+- Switching modes stops any active countdown and loads the configured duration for the selected mode.
+- When a Focus session finishes, the app plays a completion sound, sends a native notification, switches to Break mode, and seeds the next session with the configured break duration.
+- When a Break session finishes, the app plays a different completion sound, sends a native notification, switches back to Focus mode, and seeds the next session with the configured work duration.
 
-## 4. 目录结构说明
+These rules deliberately avoid more advanced Pomodoro conventions such as long breaks, task tracking, streak systems, or historical analytics. The current product favors immediacy over policy complexity.
 
-*   `electron/`: 主进程代码 (Node.js 环境)
-*   `src/`: 渲染进程代码 (Browser/React 环境)
-*   `dist/`: 构建后的渲染进程产物
-*   `dist-electron/`: 构建后的主进程产物
-*   `release/`: 打包后的安装包
+## Renderer Architecture
 
----
-*文档更新日期: 2026-03-10*
+The Renderer Process is organized so that `src/App.tsx` is mostly a composition layer, with a small amount of remaining view-adjacent helper logic.
+
+`App.tsx` determines whether the current window is the full interface or the follow window, wires together the hooks, derives presentation-friendly values such as formatted time, status text, and class names, and passes state and callbacks into presentational components. It also still owns a few renderer-side helpers for audio playback, notification requests, and simple view-specific derivations.
+
+Most stateful behavior is split into focused hooks:
+
+- `usePomodoroTimer` owns timer state and business logic. It manages `timeLeft`, running state, session mode, configured durations, the active interval, and the absolute end timestamp used for drift-resistant countdown updates.
+- `useTimerSync` owns synchronization and command routing between windows and the main process. It broadcasts authoritative timer state from the main window, answers state requests from the follow window, handles tray or main-process commands, and keeps the follow window visually current while a session is running.
+- `useWindowControls` owns window-related renderer behavior such as follow-mode toggling, always-on-top toggling for the main window, follow-mode status tracking, and resize reporting for the frameless main window.
+
+Presentational components stay narrower in scope: mode switching, time display, transport controls, and settings UI. This separation keeps timer behavior out of the view tree and prevents `App.tsx` from becoming a monolith again.
+
+## Main-Process Architecture
+
+The Main Process is intentionally helper-oriented inside `electron/main.ts`.
+
+Instead of concentrating all behavior in one large boot function, the file separates native-window, tray, notification, shortcut, IPC, and lifecycle concerns into small helpers.
+
+This structure reflects the Main Process role in the app: it does not own the countdown rules or session-transition logic, but it does own native capabilities and window lifecycle. The Renderer Process decides how Pomodoro state changes, while the Main Process decides how windows, notifications, shortcuts, and tray interactions behave on the desktop.
+
+There are still a few pragmatic exceptions worth noting. The tray keeps its own lightweight `isWorkSession` copy so the radio menu can reflect the latest reported mode, and startup currently creates the follow window eagerly once the main window is ready. Those details make the implementation slightly less pure than the ideal layering, but they match the current runtime behavior.
+
+The current design also uses two BrowserWindow instances when the follow window is present: the main window for the complete UI and a separate lightweight follow window for the ambient capsule view.
+
+## IPC and Synchronization Model
+
+Timer synchronization is built around clear state ownership.
+
+The main renderer window is the source of truth for timer state. It owns the mutable countdown state, configured durations, session transitions, and timer completion behavior through `usePomodoroTimer`. The main process does not calculate remaining time or decide session changes.
+
+IPC responsibilities are divided as follows:
+
+- Main renderer -> main process: send timer snapshots, request native notifications, start or stop follow mode, toggle always-on-top, report size changes, and schedule or cancel the timer-finished safety timeout.
+- Main process -> follow renderer: forward timer snapshots so the follow window can mirror the current state.
+- Follow renderer -> main process: request the latest timer snapshot when the follow window mounts.
+- Main process -> main renderer: forward tray and shortcut commands such as start, pause, reset, switch mode, and the timer-finished safety event.
+
+The synchronization model uses both `timeLeft` and `endTime`, but they serve different purposes. `timeLeft` is the latest displayed value. `endTime` lets both windows derive remaining time from an absolute timestamp, which avoids visible drift when intervals do not fire exactly on schedule.
+
+A separate Main Process timeout acts as a safety check for timer completion. The main window still owns completion logic, but the Main Process can send `timer-finished-check` after the expected duration so the Renderer Process can finalize the transition even if its own interval timing falls behind.
+
+## Follow Mode Design
+
+Follow Mouse Mode is designed as an ambient companion view, not just a resized version of the main interface, even though the current startup flow creates the follow window eagerly and then relies on renderer and Main Process state to make that extra window feel lightweight.
+
+Renderer responsibilities:
+
+- The follow window is detected through the `#follow` hash.
+- `App.tsx` renders the same application tree, but the follow window uses a mini-mode presentation that hides controls and settings.
+- `usePomodoroTimer` prevents the follow window from starting its own authoritative timer flow.
+- `useTimerSync` requests state from the main window and then mirrors updates locally for display.
+
+Main-process responsibilities:
+
+- `createFollowWindow` creates a separate transparent, frameless, always-on-top window dedicated to follow mode.
+- The follow window is excluded from the taskbar, visible across workspaces, and set to ignore mouse events so it does not block interaction with underlying apps.
+- `startFollowTimer` continuously samples the cursor position and moves the follow window with a small offset so the timer remains nearby without covering the pointer.
+- `closeFollowWindow`, lifecycle handlers, and the global shortcut keep follow-mode entry and exit recoverable.
+- Follow-mode status is reported back to the main renderer so the main UI can reflect whether the feature is active.
+
+This split matters because follow mode combines two very different concerns: renderer-side display simplification and main-process window orchestration. Neither side alone is sufficient.
+
+## Notifications and Audio Feedback
+
+Session completion feedback is intentionally multimodal.
+
+The renderer plays a short synthesized tone using the Web Audio API rather than loading bundled audio assets. That keeps the implementation lightweight while still distinguishing work completion from break completion through different frequencies.
+
+The renderer also asks the main process to show a native desktop notification. Native notifications are owned by the main process so they continue to use Electron's OS-level integration and can refocus the main window when clicked.
+
+This design gives the app two different channels of feedback:
+
+- immediate local sound for the moment the session flips
+- system-level notification for cases where the user is looking elsewhere
+
+Together they support the app's goal of staying helpful without requiring the window to remain front and center.
+
+## Trade-offs and Non-Goals
+
+The current architecture makes a few deliberate trade-offs.
+
+- The Renderer Process owns timer logic, which keeps product behavior close to the React UI, but it also means synchronization must be handled explicitly across windows.
+- The app uses a second BrowserWindow for Follow Mouse Mode instead of morphing the main window. That adds IPC complexity, but it produces a cleaner separation between full control UI and ambient display behavior.
+- The Main Process keeps helper-based logic in a single file. This keeps the app easy to scan at its current size, even though a larger desktop app would likely split those helpers into multiple modules.
+- The project currently favors implementation speed and local-content trust over hardened Electron isolation. That trade-off reduces boilerplate, but it keeps Renderer Process and preload boundaries weaker than a stricter Electron setup would.
+
+The following items are intentionally out of scope for this design:
+
+- onboarding, setup, or build instructions
+- task lists, project planning, or historical reporting
+- long-break cycles, habit systems, or productivity analytics
+- cloud sync or cross-device state
+- a generic multi-window workspace beyond the main window and follow capsule
+
+The document should evolve when the architecture changes, but its purpose should stay constant: explain why the product works this way and where each responsibility currently lives.

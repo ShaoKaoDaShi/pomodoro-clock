@@ -2,87 +2,85 @@
 
 ## 1. Project Overview
 
-This project is a **Pomodoro Clock** desktop application built with **Electron**, **React**, **TypeScript**, and **Tailwind CSS**.
+This repository contains a desktop Pomodoro timer built with Electron, React, TypeScript, and Tailwind CSS. Treat this file as implementation guidance for contributors: describe architecture and workflow constraints, but avoid copying user-facing product language from `README.md`.
 
-### Architecture
-The application follows the standard Electron multi-process architecture:
+## 2. Current Architecture
 
-*   **Main Process** (`electron/`):
-    *   Entry point: `electron/main.ts`.
-    *   Responsibilities:
-        *   Creating and managing the application window (`BrowserWindow`).
-        *   Handling application lifecycle events.
-        *   Managing global shortcuts (e.g., `CommandOrControl+Shift+X` to exit follow mode).
-        *   Handling IPC events for system-level features:
-            *   `start-follow-mouse`: Activates a mini-mode that follows the cursor.
-            *   `stop-follow-mouse`: Restores the main window.
-            *   `show-notification`: Displays native system notifications.
-            *   `toggle-always-on-top`: Toggles window z-index behavior.
+The app uses Electron's Main Process / Renderer Process split.
 
-*   **Renderer Process** (`src/`):
-    *   Entry point: `src/main.tsx`.
-    *   Framework: **React** (v19) with TypeScript.
-    *   Responsibilities:
-        *   UI rendering and user interaction.
-        *   Timer logic (Countdown, Work/Break sessions).
-        *   Audio playback for timer completion.
-        *   Communicating with the Main Process via `ipcRenderer`.
+- **Main Process** (`electron/main.ts`): a helper-oriented entry point that keeps window access, Follow Mouse Mode behavior, tray state, IPC wiring, and lifecycle registration in separate functions.
+- **Renderer Process** (`src/main.tsx` -> `src/App.tsx`): React renders the UI and owns timer behavior, settings changes, and IPC calls. `src/App.tsx` is primarily a composition layer: it wires hooks, derives view props, and hands state/actions down to presentational components instead of containing the whole timer implementation.
+- **Follow window model**: the main window hosts the full UI, while a lightweight follow window mirrors timer state and follows the cursor when Follow Mouse Mode is active.
+- **Styling**: Tailwind CSS v4 is configured through Vite, with shared global styles in `src/style.css` and session-specific theme values in `src/constants/theme.ts`.
 
-*   **Styling**:
-    *   Uses **Tailwind CSS** (v4) configured via `@tailwindcss/vite`.
-    *   Global styles defined in `src/style.css`.
+## 3. Directory Responsibilities
 
-## 2. Build & Commands
+- `electron/`: Main Process code. `electron/main.ts` manages BrowserWindow creation, tray interactions, Follow Mouse Mode, notifications, IPC channels, shortcuts, and lifecycle hooks.
+- `src/`: Renderer Process entry and application UI.
+- `src/App.tsx`: top-level composition layer that connects hooks, formatting helpers, theme selection, and presentational components.
+- `src/components/`: presentational Renderer Process components such as the mode switch, timer display, timer controls, and settings panel.
+- `src/hooks/`: stateful Renderer Process logic. Current hooks split timer state management, timer synchronization across windows, and window-specific controls into focused modules.
+- `src/constants/`: shared Renderer Process constants and lookup helpers, such as per-session theme definitions.
+- `src/types/`: shared TypeScript contracts for renderer state and IPC-shaped timer data.
+- `src/utils/`: small reusable helpers, such as time formatting.
+- `public/`: static assets used during development.
+- `dist/`, `dist-electron/`, `release/`: generated build artifacts; do not hand-edit them.
 
-The project uses **pnpm** as the package manager.
+## 4. Build And Verification Commands
 
-| Command | Description |
-| :--- | :--- |
-| `pnpm dev` | Starts the development server with Hot Module Replacement (HMR). Launches both Vite server and Electron app. |
-| `pnpm build` | Performs a full production build. Runs `tsc` (type check), `vite build` (bundle), and `electron-builder` (package). |
-| `pnpm preview` | Previews the production build locally. |
+The project uses `pnpm`.
 
-### Build Output
-*   `dist/`: Contains the bundled Renderer process files.
-*   `dist-electron/`: Contains the compiled Main process files.
-*   `release/`: Contains the final packaged application installers (DMG, AppImage, Exe, etc.).
+- `pnpm dev`: start Vite and Electron together for local development.
+- `pnpm build`: run the production build pipeline defined in `package.json`, which bundles the renderer with Vite and packages the app with Electron Builder.
+- `pnpm preview`: preview the renderer production build locally.
 
-## 3. Code Style
+Build outputs:
 
-*   **TypeScript**:
-    *   Strict mode is enabled (`"strict": true` in `tsconfig.json`).
-    *   Use explicit types for function parameters and return values where possible.
-    *   Interfaces are preferred over Types for object definitions.
+- `dist/`: bundled renderer assets.
+- `dist-electron/`: built Electron main and preload artifacts generated during packaging.
+- `release/`: packaged desktop application artifacts.
 
-*   **React**:
-    *   Use **Functional Components** with Hooks.
-    *   State management is handled locally with `useState` and `useReducer` (if needed).
-    *   Side effects are managed with `useEffect`.
-    *   Avoid class components.
+## 5. Code Style And Change Constraints
 
-*   **Styling**:
-    *   Use Tailwind utility classes directly in `className` props.
-    *   Avoid inline styles unless dynamic values are required.
+- Use TypeScript strict-mode friendly code and prefer explicit parameter/return types where they improve clarity.
+- Prefer interfaces for object-shaped contracts in this codebase.
+- Use functional React components and hooks; avoid class components.
+- Keep composition at the top and logic close to the module that owns it. New Renderer Process behavior should usually land in `src/hooks/`, `src/components/`, `src/constants/`, `src/types/`, or `src/utils/` rather than expanding `src/App.tsx` back into a monolith.
+- Use Tailwind utility classes in `className` props; avoid inline styles unless a value must be dynamic.
+- Preserve the existing architecture when editing docs: describe current responsibilities accurately and avoid reintroducing outdated structure.
 
-## 4. Testing
+## 6. Testing Status And Verification Expectations
 
-*   *Currently, there are no automated tests configured for this project.*
-*   **Future Recommendations**:
-    *   Unit Testing: Vitest + React Testing Library.
-    *   E2E Testing: Playwright or Cypress (with Electron support).
+There are currently no automated unit or end-to-end tests configured.
 
-## 5. Security
+Verification expectations:
+
+- Run `pnpm build` when a change may affect application behavior, packaging, configuration, or architecture-level documentation.
+- When editing architecture docs, verify statements against the current source layout before updating prose.
+- If you add automated tests in the future, document the command here and keep AGENTS guidance aligned with the actual toolchain.
+
+Future testing direction, if the project adopts it later:
+
+- Unit/integration: Vitest plus React Testing Library.
+- End-to-end: Playwright or Cypress with Electron support.
+
+## 7. Security Notes
 
 **Important Note**: The current configuration prioritizes development speed and simplicity over strict security isolation.
 
-*   **Node Integration**: Enabled (`nodeIntegration: true`).
-*   **Context Isolation**: Disabled (`contextIsolation: false`).
-*   **Implication**: The Renderer process has direct access to Node.js APIs. While convenient for this specific app, this is generally discouraged for production applications loading remote content.
-*   **Mitigation**: Since this app loads local content (`loadFile` or local dev server), the risk is reduced. However, future refactoring should aim to enable `contextIsolation` and use a `preload.js` script with `contextBridge` to expose only necessary APIs.
+- **Node Integration**: Enabled (`nodeIntegration: true`).
+- **Context Isolation**: Disabled (`contextIsolation: false`).
+- **Implication**: The Renderer Process has direct access to Node.js APIs. While convenient for this app, this is generally discouraged for production applications loading remote content.
+- **Mitigation**: Since this app loads local content (`loadFile` or the local dev server), the risk is reduced. The current preload file is not a strong isolation boundary while `contextIsolation` is disabled. Future refactoring should enable `contextIsolation` and expose only the required APIs through a deliberate preload/context-bridge surface.
 
-## 6. Configuration
+## 8. Configuration References
 
-*   **Vite**: Configured in `vite.config.ts`.
-    *   Plugins: `vite-plugin-electron` (builds Main process), `vite-plugin-electron-renderer` (enables Node integration in Renderer), `@vitejs/plugin-react` (React HMR).
-*   **TypeScript**: `tsconfig.json` handles both Main and Renderer process compilation settings.
-*   **Electron Builder**: Configuration is located in the `build` section of `package.json`.
+- `vite.config.ts`: Vite configuration, including React, Main Process bundling, and Renderer Process support.
+- `tsconfig.json`: TypeScript configuration for both Renderer Process and Electron code.
+- `package.json`: package scripts plus Electron Builder configuration in the `build` field.
+- `electron/main.ts`: Main Process runtime wiring, follow mode orchestration, and IPC channel registration.
+- `src/App.tsx`: top-level composition layer for renderer view assembly.
+- `src/hooks/usePomodoroTimer.ts`: timer state and session-transition logic.
+- `src/hooks/useTimerSync.ts`: cross-window synchronization and command routing.
+- `src/hooks/useWindowControls.ts`: Follow Mouse Mode and always-on-top window controls.
+- `src/types/timer.ts`: timer-state contracts shared across renderer modules and IPC payload handling.

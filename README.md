@@ -1,6 +1,6 @@
 # Pomodoro Clock (番茄时钟)
 
-A modern, feature-rich, and minimalist Pomodoro timer desktop application built with **Electron**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
+A desktop Pomodoro timer built with **Electron**, **React 19**, **TypeScript**, and **Tailwind CSS v4**. It focuses on fast session control, a clean always-available timer window, and lightweight desktop integrations such as notifications and Follow Mouse Mode. For implementation guidance and architecture rationale, see `AGENTS.md` and `DESIGN.md`.
 
 ## 📸 Screenshots
 
@@ -8,78 +8,91 @@ A modern, feature-rich, and minimalist Pomodoro timer desktop application built 
 |:---------------------------:|:----------:|:-----------------:|
 | ![Main Interface](./screenshots/focus-mode.png) | ![Break Mode](./screenshots/break-mode.png) | ![Follow Mouse](./screenshots/follow-mode.png) |
 
-## ✨ Features
+## ✨ What It Does
 
-### 🎨 Design Philosophy
-- **Minimalism**: Borderless window design, focusing on core functionality. Hidden controls that appear on hover to reduce visual clutter.
-- **Emotional Design**: 
-  - **Focus Mode**: Warm gradients (Rose to Orange) to inspire energy and focus.
-  - **Break Mode**: Cool gradients (Teal to Emerald) to promote relaxation.
-  - **Micro-interactions**: Smooth transitions and hover effects for a delightful user experience.
+- Run customizable Focus and Break sessions.
+- Switch between the main desktop window and Follow Mouse Mode.
+- Keep the timer above other apps with always-on-top support.
+- Show native notifications when sessions change.
+- Play generated completion sounds without bundling external audio assets.
 
-### 🚀 Core Functionality
-- **Standard Pomodoro Timer**: Customizable work and break sessions.
-- **Follow Mouse Mode (Mini Mode)**: A unique, non-intrusive mode where a tiny timer follows your cursor.
-  - The window becomes a "ghost" (ignores mouse events), allowing you to click through it.
-  - Always stays on top of other windows.
-- **Always on Top**: Toggle the main window to stay on top of other applications.
-- **System Notifications**: Native system notifications when a session starts or ends.
-- **Audio Feedback**: Simple, generated tones for timer completion (no external assets needed).
+## ⌨️ Shortcuts
 
-### ⌨️ Global Shortcuts
-- `CommandOrControl+Shift+X`: **Exit Follow Mouse Mode** and restore the main window.
+- `CommandOrControl+Shift+X`: Exit Follow Mouse Mode and restore the main window.
 
 ## 🛠 Tech Stack
 
-- **Electron**: Cross-platform desktop application framework.
-- **React 19**: The latest version of the UI library.
-- **TypeScript**: Static typing for robust code.
-- **Tailwind CSS v4**: Utility-first CSS framework (configured via `@tailwindcss/vite`).
-- **Vite**: Ultra-fast build tool and development server.
+- **Electron** for the desktop shell and native window behavior.
+- **React 19** for the renderer UI.
+- **TypeScript** for typed application logic.
+- **Tailwind CSS v4** for styling.
+- **Vite** for development and production builds.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-Ensure you have **Node.js** and **pnpm** installed on your machine.
+Install **Node.js** and **pnpm** before working with the project.
 
-### Installation
-
-Clone the repository and install dependencies:
+### Install
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:ShaoKaoDaShi/pomodoro-clock.git
 cd pomodoro-clock
 pnpm install
 ```
 
-### Development
-
-Start the development server with Hot Module Replacement (HMR):
+### Develop
 
 ```bash
 pnpm dev
 ```
 
-This will launch both the Vite server and the Electron application.
+This starts the Vite dev server and launches the Electron app.
 
 ### Build
-
-Build the application for production:
 
 ```bash
 pnpm build
 ```
 
-The output files will be in the `release/` directory.
+This runs the repository build pipeline and produces packaged desktop artifacts in `release/`.
+
+### Release
+
+```bash
+pnpm release
+```
+
+`pnpm release` runs the repository's release script, which bumps the patch version with `npm version patch`, then pushes the branch and tags. Use it only when you are ready to publish a new version from a clean, reviewed branch.
+
+For CI or publish-oriented packaging, use:
+
+```bash
+pnpm release:ci
+```
 
 ## 📂 Project Structure
 
-- `electron/`: Main process code (window management, system events).
-- `src/`: Renderer process code (React UI, timer logic).
-- `dist/`: Bundled Renderer files.
-- `dist-electron/`: Compiled Main process files.
-- `release/`: Packaged application installers.
+Source layout:
+
+- `electron/`: Main Process code, window lifecycle, shortcuts, and IPC handlers.
+- `src/components/`: renderer components such as timer display, controls, and settings.
+- `src/hooks/`: reusable hooks for timer state and window control behavior.
+- `src/constants/`: shared constants such as theme-related values.
+- `src/types/`: shared TypeScript interfaces and type definitions.
+- `src/utils/`: small utilities such as time-formatting helpers.
+
+Generated output:
+
+- `dist/`: Built renderer assets.
+- `dist-electron/`: Built Electron main and preload files.
+- `release/`: Packaged application artifacts.
+
+## 🗺 Documentation Map
+
+- `AGENTS.md`: Maintainer and coding-agent guidance, including architecture-relevant files, workflow constraints, and verification expectations.
+- `DESIGN.md`: Architecture rationale, interaction principles, and responsibility boundaries without repeating setup instructions.
 
 ## 📄 License
 
