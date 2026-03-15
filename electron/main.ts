@@ -1,102 +1,159 @@
 import {
   app,
   BrowserWindow,
-  Notification,
-  ipcMain,
-  screen,
   globalShortcut,
-  Tray,
+  ipcMain,
   Menu,
   nativeImage,
+  Notification,
+  screen,
+  Tray,
 } from "electron";
 import path from "path";
 
-// Disable security warnings
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
 
-let win: BrowserWindow | null = null;
-let followWin: BrowserWindow | null = null;
+interface TimerUpdatePayload {
+  timeLeft: number;
+  isWorkSession: boolean;
+  isRunning: boolean;
+  endTime: number | null;
+}
+
+interface NotificationPayload {
+  title: string;
+  body: string;
+}
+
+interface ResizePayload {
+  width: number;
+  height: number;
+}
+
+let mainWindow: BrowserWindow | null = null;
+let followWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let followTimer: NodeJS.Timeout | null = null;
 let mainTimer: NodeJS.Timeout | null = null;
 let isWorkSession = true;
 
-function createWindow() {
-  win = new BrowserWindow({
-    width: 400,
-    height: 500,
-    resizable: false,
-    // titleBarStyle: "hidden", // 显示红绿灯但隐藏标题栏背景
-    frame: false,
-    transparent: true, // 开启透明
-    hasShadow: true,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false, // For simplicity in this demo, usually better to set true and use preload
-      preload: path.join(__dirname, "preload.js"),
-      backgroundThrottling: false, // 防止后台运行时定时器停止
-    },
-    title: "番茄时钟",
-    icon: path.join(
-      __dirname,
-      process.env.VITE_DEV_SERVER_URL
-        ? "../public/icon.png"
-        : "../dist/icon.png",
-    ),
-  });
-
-  if (process.env.VITE_DEV_SERVER_URL) {
-    win.loadURL(process.env.VITE_DEV_SERVER_URL);
-    // win.webContents.openDevTools();
-  } else {
-    // win.loadFile('dist/index.html');
-    win.loadFile(path.join(__dirname, "../dist/index.html"));
-  }
-
-  // 注册退出跟随模式的快捷键
-  globalShortcut.register("CommandOrControl+Shift+X", () => {
-    closeFollowWindow();
-
-    // 确保主窗口可见（可选，如果本来就可见则无所谓）
-    if (win) {
-      win.focus();
-    }
-  });
-
-  win.once("ready-to-show", () => {
-    if (win) {
-      win.show();
-      createFollowWindow(); // 默认开启跟随模式
-    }
-  });
+function getAppIconPath(): string {
+  return path.join(
+    __dirname,
+    process.env.VITE_DEV_SERVER_URL ? "../public/icon.png" : "../dist/icon.png",
+  );
 }
 
-function closeFollowWindow() {
-  if (followWin) {
-    followWin.close();
-    followWin = null;
+function getMainWindow(): BrowserWindow | null {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+}
+
+function getFollowWindow(): BrowserWindow | null {
+  return followWindow && !followWindow.isDestroyed() ? followWindow : null;
+}
+
+function showMainWindow(): void {
+  const window = getMainWindow();
+  if (!window) {
+    createMainWindow();
+    return;
   }
 
+  if (window.isMinimized()) {
+    window.restore();
+  }
+
+  window.show();
+  window.focus();
+}
+
+function notifyFollowModeChanged(isActive: boolean): void {
+  const window = getMainWindow();
+  if (window) {
+    window.webContents.send("follow-mode-changed", isActive);
+  }
+}
+
+function stopFollowTimer(): void {
   if (followTimer) {
     clearInterval(followTimer);
     followTimer = null;
   }
+}
 
-  // 通知主窗口状态变化
-  if (win && !win.isDestroyed()) {
-    win.webContents.send("follow-mode-changed", false);
+function startFollowTimer(): void {
+  stopFollowTimer();
+
+  followTimer = setInterval(() => {
+    const window = getFollowWindow();
+    if (!window) {
+      stopFollowTimer();
+      return;
+    }
+
+    const point = screen.getCursorScreenPoint();
+    window.setPosition(point.x + 15, point.y + 15);
+  }, 16);
+}
+
+function stopMainTimerCheck(): void {
+  if (mainTimer) {
+    clearTimeout(mainTimer);
+    mainTimer = null;
   }
 }
 
-function createFollowWindow() {
-  if (followWin) {
-    if (!followWin.isDestroyed()) {
-      followWin.focus();
+function startMainTimerCheck(durationMs: number): void {
+  stopMainTimerCheck();
+  mainTimer = setTimeout(() => {
+    const window = getMainWindow();
+    if (window) {
+      window.webContents.send("timer-finished-check");
     }
+  }, durationMs);
+}
+
+function createMainWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 400,
+    height: 500,
+    resizable: false,
+    frame: false,
+    transparent: true,
+    hasShadow: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: path.join(__dirname, "preload.js"),
+      backgroundThrottling: false,
+    },
+    title: "番茄时钟",
+    icon: getAppIconPath(),
+  });
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    window.loadURL(process.env.VITE_DEV_SERVER_URL);
+  } else {
+    window.loadFile(path.join(__dirname, "../dist/index.html"));
+  }
+
+  window.once("ready-to-show", () => {
+    window.show();
+    createFollowWindow();
+  });
+
+  mainWindow = window;
+  return window;
+}
+
+function createFollowWindow(): void {
+  const existingWindow = getFollowWindow();
+  if (existingWindow) {
+    existingWindow.focus();
     return;
   }
 
-  followWin = new BrowserWindow({
+  const window = new BrowserWindow({
     width: 100,
     height: 40,
     resizable: false,
@@ -111,249 +168,206 @@ function createFollowWindow() {
     },
   });
 
-  followWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  followWin.setAlwaysOnTop(true, "screen-saver");
-  followWin.setIgnoreMouseEvents(true);
+  window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  window.setAlwaysOnTop(true, "screen-saver");
+  window.setIgnoreMouseEvents(true);
 
   if (process.env.VITE_DEV_SERVER_URL) {
-    followWin.loadURL(process.env.VITE_DEV_SERVER_URL + "#follow");
+    window.loadURL(`${process.env.VITE_DEV_SERVER_URL}#follow`);
   } else {
-    followWin.loadFile(path.join(__dirname, "../dist/index.html"), {
+    window.loadFile(path.join(__dirname, "../dist/index.html"), {
       hash: "follow",
     });
   }
 
-  // 启动定时器跟随鼠标
-  if (followTimer) clearInterval(followTimer);
-
-  followTimer = setInterval(() => {
-    if (!followWin || followWin.isDestroyed()) {
-      if (followTimer) clearInterval(followTimer);
-      return;
-    }
-    const point = screen.getCursorScreenPoint();
-    // 偏移一点，避免遮挡鼠标焦点
-    followWin.setPosition(point.x + 15, point.y + 15);
-  }, 16); // ~60fps
-
-  followWin.on("closed", () => {
-    followWin = null;
-    if (followTimer) {
-      clearInterval(followTimer);
-      followTimer = null;
-    }
-    // 通知主窗口状态变化
-    if (win && !win.isDestroyed()) {
-      win.webContents.send("follow-mode-changed", false);
-    }
+  window.on("closed", () => {
+    followWindow = null;
+    stopFollowTimer();
+    notifyFollowModeChanged(false);
   });
 
-  // 通知主窗口状态变化
-  if (win && !win.isDestroyed()) {
-    win.webContents.send("follow-mode-changed", true);
-  }
+  followWindow = window;
+  startFollowTimer();
+  notifyFollowModeChanged(true);
 }
 
-function updateTrayMenu() {
-  if (!tray) return;
+function closeFollowWindow(): void {
+  const window = getFollowWindow();
+  if (window) {
+    window.close();
+  }
+
+  followWindow = null;
+  stopFollowTimer();
+  notifyFollowModeChanged(false);
+}
+
+function sendToMainWindow(channel: string, payload?: unknown): void {
+  const window = getMainWindow();
+  if (!window) {
+    return;
+  }
+
+  if (typeof payload === "undefined") {
+    window.webContents.send(channel);
+    return;
+  }
+
+  window.webContents.send(channel, payload);
+}
+
+function updateTrayMenu(): void {
+  if (!tray) {
+    return;
+  }
 
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "显示主窗口",
-      click: () => {
-        if (win) {
-          if (win.isMinimized()) win.restore();
-          win.show();
-          win.focus();
-        } else {
-          createWindow();
-        }
-      },
+      click: () => showMainWindow(),
     },
     { type: "separator" },
     {
       label: "专注模式",
       type: "radio",
       checked: isWorkSession,
-      click: () => {
-        if (win && !win.isDestroyed()) {
-          win.webContents.send("switch-mode", "work");
-        }
-      },
+      click: () => sendToMainWindow("switch-mode", "work"),
     },
     {
       label: "休息模式",
       type: "radio",
       checked: !isWorkSession,
-      click: () => {
-        if (win && !win.isDestroyed()) {
-          win.webContents.send("switch-mode", "break");
-        }
-      },
+      click: () => sendToMainWindow("switch-mode", "break"),
     },
     { type: "separator" },
     {
       label: "开始计时",
-      click: () => {
-        if (win && !win.isDestroyed()) {
-          win.webContents.send("start-timer");
-        }
-      },
+      click: () => sendToMainWindow("start-timer"),
     },
     {
       label: "暂停计时",
-      click: () => {
-        if (win && !win.isDestroyed()) {
-          win.webContents.send("pause-timer");
-        }
-      },
+      click: () => sendToMainWindow("pause-timer"),
     },
     {
       label: "重置计时",
-      click: () => {
-        if (win && !win.isDestroyed()) {
-          win.webContents.send("reset-timer");
-        }
-      },
+      click: () => sendToMainWindow("reset-timer"),
     },
     { type: "separator" },
     {
       label: "退出",
-      click: () => {
-        app.quit();
-      },
+      click: () => app.quit(),
     },
   ]);
 
   tray.setContextMenu(contextMenu);
 }
 
-function createTray() {
-  const iconPath = path.join(
-    __dirname,
-    process.env.VITE_DEV_SERVER_URL ? "../public/icon.png" : "../dist/icon.png",
-  );
-
-  const icon = nativeImage.createFromPath(iconPath);
+function createTray(): void {
+  const icon = nativeImage.createFromPath(getAppIconPath());
   tray = new Tray(icon.resize({ width: 16, height: 16 }));
   tray.setToolTip("番茄时钟");
-
   updateTrayMenu();
-
-  tray.on("double-click", () => {
-    if (win) {
-      if (win.isMinimized()) win.restore();
-      win.show();
-      win.focus();
-    }
-  });
+  tray.on("double-click", () => showMainWindow());
 }
 
-// 监听跟随鼠标模式开启
-ipcMain.on("start-follow-mouse", (event) => {
-  createFollowWindow();
-});
-
-// 检查跟随模式状态
-ipcMain.on("check-follow-status", (event) => {
-  event.sender.send(
-    "follow-mode-changed",
-    !!(followWin && !followWin.isDestroyed()),
-  );
-});
-
-// 监听跟随鼠标模式关闭
-ipcMain.on("stop-follow-mouse", () => {
-  closeFollowWindow();
-});
-
-ipcMain.on("timer-update", (event, state) => {
-  // 如果是主窗口发来的更新，转发给跟随窗口
-  if (followWin && !followWin.isDestroyed()) {
-    followWin.webContents.send("timer-update", state);
-  }
-
-  // 更新托盘菜单状态
-  if (state.isWorkSession !== isWorkSession) {
-    isWorkSession = state.isWorkSession;
-    updateTrayMenu();
-  }
-});
-
-ipcMain.on("request-timer-state", (event) => {
-  // 跟随窗口请求状态，转发给主窗口
-  if (win && !win.isDestroyed()) {
-    win.webContents.send("request-timer-state");
-  }
-});
-
-// 启动/停止主进程定时器兜底
-ipcMain.on("start-timer-check", (event, durationMs) => {
-  if (mainTimer) clearTimeout(mainTimer);
-  mainTimer = setTimeout(() => {
-    // 时间到，通知渲染进程
-    if (win && !win.isDestroyed()) {
-      win.webContents.send("timer-finished-check");
-    }
-  }, durationMs);
-});
-
-ipcMain.on("stop-timer-check", () => {
-  if (mainTimer) {
-    clearTimeout(mainTimer);
-    mainTimer = null;
-  }
-});
-
-// 监听渲染进程发送的通知请求
-ipcMain.on("show-notification", (event, { title, body }) => {
+function showNotification({ title, body }: NotificationPayload): void {
   const notification = new Notification({ title, body });
-  notification.on("click", () => {
-    const win = BrowserWindow.getAllWindows()[0];
-    if (win) {
-      if (win.isMinimized()) win.restore();
-      win.focus();
-    }
-  });
+  notification.on("click", () => showMainWindow());
   notification.show();
-});
-
-// 监听“总在最前”切换请求
-ipcMain.on("toggle-always-on-top", (event, flag) => {
-  if (win && !win.isDestroyed()) {
-    win.setAlwaysOnTop(flag);
-  }
-});
-
-// 监听调整窗口大小请求
-ipcMain.on("resize-window", (event, { width, height }) => {
-  if (win && !win.isDestroyed()) {
-    win.setSize(width, height, true);
-  }
-});
-
-// 确保 Windows 系统下设置正确的 App User Model ID
-if (process.platform === "win32") {
-  app.setAppUserModelId(app.name);
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  createTray();
+function registerIpcHandlers(): void {
+  ipcMain.on("start-follow-mouse", () => {
+    createFollowWindow();
+  });
 
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+  ipcMain.on("check-follow-status", (event) => {
+    event.sender.send("follow-mode-changed", Boolean(getFollowWindow()));
+  });
+
+  ipcMain.on("stop-follow-mouse", () => {
+    closeFollowWindow();
+  });
+
+  ipcMain.on("timer-update", (_event, state: TimerUpdatePayload) => {
+    const window = getFollowWindow();
+    if (window) {
+      window.webContents.send("timer-update", state);
+    }
+
+    if (state.isWorkSession !== isWorkSession) {
+      isWorkSession = state.isWorkSession;
+      updateTrayMenu();
     }
   });
-});
 
-app.on("will-quit", () => {
-  globalShortcut.unregisterAll();
-});
+  ipcMain.on("request-timer-state", () => {
+    sendToMainWindow("request-timer-state");
+  });
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
+  ipcMain.on("start-timer-check", (_event, durationMs: number) => {
+    startMainTimerCheck(durationMs);
+  });
+
+  ipcMain.on("stop-timer-check", () => {
+    stopMainTimerCheck();
+  });
+
+  ipcMain.on("show-notification", (_event, payload: NotificationPayload) => {
+    showNotification(payload);
+  });
+
+  ipcMain.on("toggle-always-on-top", (_event, flag: boolean) => {
+    const window = getMainWindow();
+    if (window) {
+      window.setAlwaysOnTop(flag);
+    }
+  });
+
+  ipcMain.on("resize-window", (_event, { width, height }: ResizePayload) => {
+    const window = getMainWindow();
+    if (window) {
+      window.setSize(width, height, true);
+    }
+  });
+}
+
+function registerGlobalShortcuts(): void {
+  globalShortcut.register("CommandOrControl+Shift+X", () => {
+    closeFollowWindow();
+    showMainWindow();
+  });
+}
+
+function registerAppLifecycle(): void {
+  if (process.platform === "win32") {
+    app.setAppUserModelId(app.name);
   }
-});
+
+  app.whenReady().then(() => {
+    createMainWindow();
+    createTray();
+    registerGlobalShortcuts();
+
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createMainWindow();
+      }
+    });
+  });
+
+  app.on("will-quit", () => {
+    globalShortcut.unregisterAll();
+    stopFollowTimer();
+    stopMainTimerCheck();
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      app.quit();
+    }
+  });
+}
+
+registerIpcHandlers();
+registerAppLifecycle();
