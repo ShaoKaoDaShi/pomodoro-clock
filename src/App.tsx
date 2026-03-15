@@ -551,7 +551,7 @@ const App = () => {
                   value={breakTime}
                   min="1"
                   max="30"
-                  className={`w-full bg-transparent font-bold text-lg text-gray-700 outline-none p-0 ${isWorkSession ? "text-gray-600" : "text-teal-600"}`}
+                  className={`w-full bg-transparent font-bold text-lg text-gray-700 outline-none p-0 ${theme.text}`}
                   onChange={(e) => setBreakTime(Number(e.target.value))}
                   disabled={isRunning}
                 />
