@@ -19,6 +19,7 @@ let followWin: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let followTimer: NodeJS.Timeout | null = null;
 let mainTimer: NodeJS.Timeout | null = null;
+let isWorkSession = true;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -153,15 +154,8 @@ function createFollowWindow() {
   }
 }
 
-function createTray() {
-  const iconPath = path.join(
-    __dirname,
-    process.env.VITE_DEV_SERVER_URL ? "../public/icon.png" : "../dist/icon.png",
-  );
-
-  const icon = nativeImage.createFromPath(iconPath);
-  tray = new Tray(icon.resize({ width: 16, height: 16 }));
-  tray.setToolTip("番茄时钟");
+function updateTrayMenu() {
+  if (!tray) return;
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -173,6 +167,27 @@ function createTray() {
           win.focus();
         } else {
           createWindow();
+        }
+      },
+    },
+    { type: "separator" },
+    {
+      label: "专注模式",
+      type: "radio",
+      checked: isWorkSession,
+      click: () => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("switch-mode", "work");
+        }
+      },
+    },
+    {
+      label: "休息模式",
+      type: "radio",
+      checked: !isWorkSession,
+      click: () => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("switch-mode", "break");
         }
       },
     },
@@ -211,6 +226,19 @@ function createTray() {
   ]);
 
   tray.setContextMenu(contextMenu);
+}
+
+function createTray() {
+  const iconPath = path.join(
+    __dirname,
+    process.env.VITE_DEV_SERVER_URL ? "../public/icon.png" : "../dist/icon.png",
+  );
+
+  const icon = nativeImage.createFromPath(iconPath);
+  tray = new Tray(icon.resize({ width: 16, height: 16 }));
+  tray.setToolTip("番茄时钟");
+
+  updateTrayMenu();
 
   tray.on("double-click", () => {
     if (win) {
@@ -243,6 +271,12 @@ ipcMain.on("timer-update", (event, state) => {
   // 如果是主窗口发来的更新，转发给跟随窗口
   if (followWin && !followWin.isDestroyed()) {
     followWin.webContents.send("timer-update", state);
+  }
+
+  // 更新托盘菜单状态
+  if (state.isWorkSession !== isWorkSession) {
+    isWorkSession = state.isWorkSession;
+    updateTrayMenu();
   }
 });
 

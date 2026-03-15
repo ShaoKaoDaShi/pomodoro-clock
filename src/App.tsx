@@ -37,119 +37,15 @@ const App = () => {
     };
   }, [timeLeft, isWorkSession, isRunning, workTime, breakTime]);
 
-  // IPC Listeners Setup
-  useEffect(() => {
-    if (isFollowWindow) {
-      ipcRenderer.send("request-timer-state");
+  // Ref to hold latest handlers
+  const handlersRef = useRef({
+    startTimer: () => {},
+    pauseTimer: () => {},
+    resetTimer: () => {},
+    switchMode: (_mode: "work" | "break") => {},
+  });
 
-      const handleTimerUpdate = (
-        _event: any,
-        state: {
-          timeLeft: number;
-          isWorkSession: boolean;
-          isRunning: boolean;
-          endTime: number | null;
-        },
-      ) => {
-        setIsWorkSession(state.isWorkSession);
-        setIsRunning(state.isRunning);
-        endTimeRef.current = state.endTime;
-
-        if (!state.isRunning) {
-          setTimeLeft(state.timeLeft);
-        } else if (state.endTime) {
-          // If running, immediately calculate time left based on endTime to avoid jump
-          const now = Date.now();
-          const distance = state.endTime - now;
-          const secondsLeft = Math.ceil(distance / 1000);
-          setTimeLeft(secondsLeft > 0 ? secondsLeft : 0);
-        }
-      };
-
-      ipcRenderer.on("timer-update", handleTimerUpdate);
-      return () => {
-        ipcRenderer.removeListener("timer-update", handleTimerUpdate);
-      };
-    } else {
-      // Main window listens for state requests from follow window
-      const handleRequestState = () => {
-        ipcRenderer.send("timer-update", stateRef.current);
-      };
-
-      const handleTimerFinishedCheck = () => {
-        // 主进程发来通知说时间到了，作为兜底
-        if (stateRef.current.isRunning) {
-          setTimeLeft(0);
-          timerComplete();
-        }
-      };
-
-      // Listen for tray menu commands
-      const handleStartTimer = () => {
-        startTimer();
-      };
-
-      const handlePauseTimer = () => {
-        pauseTimer();
-      };
-
-      const handleResetTimer = () => {
-        resetTimer();
-      };
-
-      ipcRenderer.on("request-timer-state", handleRequestState);
-      ipcRenderer.on("timer-finished-check", handleTimerFinishedCheck);
-      ipcRenderer.on("start-timer", handleStartTimer);
-      ipcRenderer.on("pause-timer", handlePauseTimer);
-      ipcRenderer.on("reset-timer", handleResetTimer);
-
-      return () => {
-        ipcRenderer.removeListener("request-timer-state", handleRequestState);
-        ipcRenderer.removeListener(
-          "timer-finished-check",
-          handleTimerFinishedCheck,
-        );
-        ipcRenderer.removeListener("start-timer", handleStartTimer);
-        ipcRenderer.removeListener("pause-timer", handlePauseTimer);
-        ipcRenderer.removeListener("reset-timer", handleResetTimer);
-      };
-    }
-  }, [isFollowWindow]);
-
-  // Local timer for Follow Window to update UI smoothly
-  useEffect(() => {
-    if (!isFollowWindow) return;
-
-    let interval: NodeJS.Timeout;
-
-    if (isRunning) {
-      interval = setInterval(() => {
-        if (endTimeRef.current) {
-          const now = Date.now();
-          const distance = endTimeRef.current - now;
-          const secondsLeft = Math.ceil(distance / 1000);
-          if (secondsLeft >= 0) {
-            setTimeLeft(secondsLeft);
-          }
-        }
-      }, 200);
-    }
-
-    return () => clearInterval(interval);
-  }, [isFollowWindow, isRunning]);
-
-  // Broadcaster (Main Window only)
-  useEffect(() => {
-    if (!isFollowWindow) {
-      ipcRenderer.send("timer-update", {
-        timeLeft,
-        isWorkSession,
-        isRunning,
-        endTime: endTimeRef.current,
-      });
-    }
-  }, [isFollowWindow, timeLeft, isWorkSession, isRunning]);
-
+  // ... (Function definitions)
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -249,9 +145,132 @@ const App = () => {
     }
     setIsRunning(false);
     ipcRenderer.send("stop-timer-check");
-    setIsWorkSession(true);
-    setTimeLeft(workTime * 60);
+    // setIsWorkSession(true); // Don't force work session
+    if (isWorkSession) {
+      setTimeLeft(workTime * 60);
+    } else {
+      setTimeLeft(breakTime * 60);
+    }
   };
+
+  // IPC Listeners Setup
+  useEffect(() => {
+    if (isFollowWindow) {
+      ipcRenderer.send("request-timer-state");
+
+      const handleTimerUpdate = (
+        _event: any,
+        state: {
+          timeLeft: number;
+          isWorkSession: boolean;
+          isRunning: boolean;
+          endTime: number | null;
+        },
+      ) => {
+        setIsWorkSession(state.isWorkSession);
+        setIsRunning(state.isRunning);
+        endTimeRef.current = state.endTime;
+
+        if (!state.isRunning) {
+          setTimeLeft(state.timeLeft);
+        } else if (state.endTime) {
+          // If running, immediately calculate time left based on endTime to avoid jump
+          const now = Date.now();
+          const distance = state.endTime - now;
+          const secondsLeft = Math.ceil(distance / 1000);
+          setTimeLeft(secondsLeft > 0 ? secondsLeft : 0);
+        }
+      };
+
+      ipcRenderer.on("timer-update", handleTimerUpdate);
+      return () => {
+        ipcRenderer.removeListener("timer-update", handleTimerUpdate);
+      };
+    } else {
+      // Main window listens for state requests from follow window
+      const handleRequestState = () => {
+        ipcRenderer.send("timer-update", stateRef.current);
+      };
+
+      const handleTimerFinishedCheck = () => {
+        // 主进程发来通知说时间到了，作为兜底
+        if (stateRef.current.isRunning) {
+          setTimeLeft(0);
+          timerComplete();
+        }
+      };
+
+      // Listen for tray menu commands
+      const handleStartTimer = () => {
+        handlersRef.current.startTimer();
+      };
+
+      const handlePauseTimer = () => {
+        handlersRef.current.pauseTimer();
+      };
+
+      const handleResetTimer = () => {
+        handlersRef.current.resetTimer();
+      };
+
+      const handleSwitchMode = (_event: any, mode: "work" | "break") => {
+        handlersRef.current.switchMode(mode);
+      };
+
+      ipcRenderer.on("request-timer-state", handleRequestState);
+      ipcRenderer.on("timer-finished-check", handleTimerFinishedCheck);
+      ipcRenderer.on("start-timer", handleStartTimer);
+      ipcRenderer.on("pause-timer", handlePauseTimer);
+      ipcRenderer.on("reset-timer", handleResetTimer);
+      ipcRenderer.on("switch-mode", handleSwitchMode);
+
+      return () => {
+        ipcRenderer.removeListener("request-timer-state", handleRequestState);
+        ipcRenderer.removeListener(
+          "timer-finished-check",
+          handleTimerFinishedCheck,
+        );
+        ipcRenderer.removeListener("start-timer", handleStartTimer);
+        ipcRenderer.removeListener("pause-timer", handlePauseTimer);
+        ipcRenderer.removeListener("reset-timer", handleResetTimer);
+        ipcRenderer.removeListener("switch-mode", handleSwitchMode);
+      };
+    }
+  }, [isFollowWindow]);
+
+  // Local timer for Follow Window to update UI smoothly
+  useEffect(() => {
+    if (!isFollowWindow) return;
+
+    let interval: NodeJS.Timeout;
+
+    if (isRunning) {
+      interval = setInterval(() => {
+        if (endTimeRef.current) {
+          const now = Date.now();
+          const distance = endTimeRef.current - now;
+          const secondsLeft = Math.ceil(distance / 1000);
+          if (secondsLeft >= 0) {
+            setTimeLeft(secondsLeft);
+          }
+        }
+      }, 200);
+    }
+
+    return () => clearInterval(interval);
+  }, [isFollowWindow, isRunning]);
+
+  // Broadcaster (Main Window only)
+  useEffect(() => {
+    if (!isFollowWindow) {
+      ipcRenderer.send("timer-update", {
+        timeLeft,
+        isWorkSession,
+        isRunning,
+        endTime: endTimeRef.current,
+      });
+    }
+  }, [isFollowWindow, timeLeft, isWorkSession, isRunning]);
 
   const handleFollowMouse = () => {
     if (isFollowActive) {
@@ -334,13 +353,13 @@ const App = () => {
   // Theme configuration based on session state
   const theme = isWorkSession
     ? {
-        bg: "from-rose-50 to-orange-50",
-        text: "text-rose-600",
-        button: "bg-rose-500 hover:bg-rose-600 shadow-rose-200",
-        buttonSecondary: "bg-rose-100 text-rose-700 hover:bg-rose-200",
-        ring: "focus:ring-rose-200",
-        border: "border-rose-100",
-        mini: "bg-rose-50/90 text-rose-600 border-rose-200/50 shadow-rose-100/50",
+        bg: "from-indigo-50 to-blue-50",
+        text: "text-indigo-600",
+        button: "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-200",
+        buttonSecondary: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200",
+        ring: "focus:ring-indigo-200",
+        border: "border-indigo-100",
+        mini: "bg-indigo-50/90 text-indigo-600 border-indigo-200/50 shadow-indigo-100/50",
       }
     : {
         bg: "from-teal-50 to-emerald-50",
@@ -351,6 +370,34 @@ const App = () => {
         border: "border-teal-100",
         mini: "bg-teal-50/90 text-teal-600 border-teal-200/50 shadow-teal-100/50",
       };
+
+  const switchMode = (mode: "work" | "break") => {
+    if (
+      (mode === "work" && isWorkSession) ||
+      (mode === "break" && !isWorkSession)
+    )
+      return;
+
+    // Stop timer if running
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    setIsRunning(false);
+    ipcRenderer.send("stop-timer-check");
+
+    // Switch mode
+    const isWork = mode === "work";
+    setIsWorkSession(isWork);
+    setTimeLeft(isWork ? workTime * 60 : breakTime * 60);
+  };
+
+  // Update handlers ref on every render
+  handlersRef.current = {
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    switchMode,
+  };
 
   return (
     <div
@@ -369,13 +416,30 @@ const App = () => {
           }
         `}
       >
-        {/* Header */}
-        <div className={`text-center mb-6 ${isMiniMode ? "hidden" : ""}`}>
-          <span
-            className={`text-xs font-medium uppercase tracking-widest ${isWorkSession ? "text-rose-400" : "text-teal-400"}`}
+        {/* Header - Mode Switcher */}
+        <div
+          className={`flex justify-center mb-6 gap-2 ${isMiniMode ? "hidden" : ""} [-webkit-app-region:no-drag]`}
+        >
+          <button
+            onClick={() => switchMode("work")}
+            className={`text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full transition-all duration-300 ${
+              isWorkSession
+                ? "bg-white shadow-sm text-indigo-500"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
           >
-            {isWorkSession ? "Focus Time" : "Break Time"}
-          </span>
+            Focus
+          </button>
+          <button
+            onClick={() => switchMode("break")}
+            className={`text-xs font-medium uppercase tracking-widest px-3 py-1 rounded-full transition-all duration-300 ${
+              !isWorkSession
+                ? "bg-white shadow-sm text-teal-500"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            Break
+          </button>
         </div>
 
         {/* Timer Display */}
