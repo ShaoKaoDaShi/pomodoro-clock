@@ -37,6 +37,27 @@ let followTimer: NodeJS.Timeout | null = null;
 let mainTimer: NodeJS.Timeout | null = null;
 let isWorkSession = true;
 
+function supportsOpenAtLogin(): boolean {
+  return process.platform === "darwin" || process.platform === "win32";
+}
+
+function getOpenAtLoginEnabled(): boolean {
+  if (!supportsOpenAtLogin()) {
+    return false;
+  }
+
+  return app.getLoginItemSettings().openAtLogin;
+}
+
+function setOpenAtLoginEnabled(flag: boolean): boolean {
+  if (!supportsOpenAtLogin()) {
+    return false;
+  }
+
+  app.setLoginItemSettings({ openAtLogin: flag });
+  return getOpenAtLoginEnabled();
+}
+
 function getAppIconPath(): string {
   return path.join(
     __dirname,
@@ -322,6 +343,14 @@ function registerIpcHandlers(): void {
     if (window) {
       window.setAlwaysOnTop(flag);
     }
+  });
+
+  ipcMain.on("request-open-at-login", (event) => {
+    event.sender.send("open-at-login-changed", getOpenAtLoginEnabled());
+  });
+
+  ipcMain.on("toggle-open-at-login", (event, flag: boolean) => {
+    event.sender.send("open-at-login-changed", setOpenAtLoginEnabled(flag));
   });
 
   ipcMain.on("resize-window", (_event, { width, height }: ResizePayload) => {

@@ -7,11 +7,13 @@ interface SettingsPanelProps {
   breakTime: number;
   isRunning: boolean;
   isAlwaysOnTop: boolean;
+  isOpenAtLogin: boolean;
   isFollowActive: boolean;
   theme: SessionTheme;
   onWorkTimeChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onBreakTimeChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onAlwaysOnTopChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onOpenAtLoginChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onFollowMouse: () => void;
 }
 
@@ -21,11 +23,13 @@ export default function SettingsPanel({
   breakTime,
   isRunning,
   isAlwaysOnTop,
+  isOpenAtLogin,
   isFollowActive,
   theme,
   onWorkTimeChange,
   onBreakTimeChange,
   onAlwaysOnTopChange,
+  onOpenAtLoginChange,
   onFollowMouse,
 }: SettingsPanelProps) {
   return (
@@ -74,22 +78,40 @@ export default function SettingsPanel({
         </div>
       </div>
 
-      <div className="flex justify-between items-center px-1">
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <div className="relative">
-            <input
-              type="checkbox"
-              className="peer sr-only"
-              checked={isAlwaysOnTop}
-              onChange={onAlwaysOnTopChange}
-            />
-            <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-slate-700 transition-colors"></div>
-            <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
-          </div>
-          <span className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors">
-            总在最前
-          </span>
-        </label>
+      <div className="flex justify-between items-center gap-4 px-1">
+        <div className="flex flex-col gap-3">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={isAlwaysOnTop}
+                onChange={onAlwaysOnTopChange}
+              />
+              <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-slate-700 transition-colors"></div>
+              <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+            </div>
+            <span className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors">
+              总在最前
+            </span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={isOpenAtLogin}
+                onChange={onOpenAtLoginChange}
+              />
+              <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-slate-700 transition-colors"></div>
+              <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+            </div>
+            <span className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors">
+              开机启动
+            </span>
+          </label>
+        </div>
 
         <button
           className={`transition-colors p-2 rounded-full ${

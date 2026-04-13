@@ -9,8 +9,10 @@ interface UseWindowControlsOptions {
 interface UseWindowControlsResult {
   isFollowActive: boolean;
   isAlwaysOnTop: boolean;
+  isOpenAtLogin: boolean;
   handleFollowMouse: () => void;
   handleAlwaysOnTopChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  handleOpenAtLoginChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function useWindowControls({
@@ -18,6 +20,7 @@ export function useWindowControls({
 }: UseWindowControlsOptions): UseWindowControlsResult {
   const [isFollowActive, setIsFollowActive] = useState(false);
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(false);
+  const [isOpenAtLogin, setIsOpenAtLogin] = useState(false);
 
   const handleFollowMouse = () => {
     ipcRenderer.send(isFollowActive ? "stop-follow-mouse" : "start-follow-mouse");
@@ -27,6 +30,12 @@ export function useWindowControls({
     const nextValue = event.target.checked;
     setIsAlwaysOnTop(nextValue);
     ipcRenderer.send("toggle-always-on-top", nextValue);
+  };
+
+  const handleOpenAtLoginChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextValue = event.target.checked;
+    setIsOpenAtLogin(nextValue);
+    ipcRenderer.send("toggle-open-at-login", nextValue);
   };
 
   useEffect(() => {
@@ -44,6 +53,26 @@ export function useWindowControls({
       ipcRenderer.removeListener("follow-mode-changed", handleFollowChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (isFollowWindow) {
+      return;
+    }
+
+    const handleOpenAtLoginChange = (
+      _event: Electron.IpcRendererEvent,
+      isEnabled: boolean,
+    ) => {
+      setIsOpenAtLogin(isEnabled);
+    };
+
+    ipcRenderer.on("open-at-login-changed", handleOpenAtLoginChange);
+    ipcRenderer.send("request-open-at-login");
+
+    return () => {
+      ipcRenderer.removeListener("open-at-login-changed", handleOpenAtLoginChange);
+    };
+  }, [isFollowWindow]);
 
   useEffect(() => {
     if (isFollowWindow) {
@@ -80,7 +109,9 @@ export function useWindowControls({
   return {
     isFollowActive,
     isAlwaysOnTop,
+    isOpenAtLogin,
     handleFollowMouse,
     handleAlwaysOnTopChange,
+    handleOpenAtLoginChange,
   };
 }

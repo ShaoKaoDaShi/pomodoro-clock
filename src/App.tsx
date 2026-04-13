@@ -14,10 +14,16 @@ import { formatTime } from "./utils/time";
 const App = () => {
   const isFollowWindow = window.location.hash === "#follow";
   const isMiniMode = isFollowWindow;
-  const { isAlwaysOnTop, isFollowActive, handleAlwaysOnTopChange, handleFollowMouse } =
-    useWindowControls({
-      isFollowWindow,
-    });
+  const {
+    isAlwaysOnTop,
+    isOpenAtLogin,
+    isFollowActive,
+    handleAlwaysOnTopChange,
+    handleOpenAtLoginChange,
+    handleFollowMouse,
+  } = useWindowControls({
+    isFollowWindow,
+  });
 
   const playSound = (isWorkSession: boolean) => {
     const AudioContextCtor =
@@ -162,11 +168,13 @@ const App = () => {
           breakTime={timer.breakTime}
           isRunning={timer.isRunning}
           isAlwaysOnTop={isAlwaysOnTop}
+          isOpenAtLogin={isOpenAtLogin}
           isFollowActive={isFollowActive}
           theme={theme}
           onWorkTimeChange={handleWorkTimeChange}
           onBreakTimeChange={handleBreakTimeChange}
           onAlwaysOnTopChange={handleAlwaysOnTopChange}
+          onOpenAtLoginChange={handleOpenAtLoginChange}
           onFollowMouse={handleFollowMouse}
         />
       </div>
