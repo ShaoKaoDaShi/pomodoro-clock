@@ -15,6 +15,7 @@ Goal: Improve the new-version update feature and release automation so users can
 9. Fix macOS signed-update release requirements - complete
 10. Fix electron-builder macOS release CLI override parsing - complete
 11. Add explicit macOS signing secret validation - complete
+12. Decode base64 CSC_LINK before macOS signing - complete
 
 ## Decisions
 
@@ -34,3 +35,4 @@ Goal: Improve the new-version update feature and release automation so users can
 | `npm run build` failed after enabling `mac.forceCodeSigning` globally | 1 | Moved forced signing/notarization to the macOS GitHub release command so local builds still work |
 | GitHub Actions failed with `types is not iterable` | 1 | Replaced `--mac.forceCodeSigning` CLI args with electron-builder config overrides `-c.mac.forceCodeSigning` and `-c.mac.notarize` |
 | GitHub Actions failed with `not a file` after `CSC_KEY_PASSWORD is not defined` | 1 | Added a macOS-only preflight step that fails clearly when signing/notarization secrets are missing |
+| GitHub Actions failed with `ENAMETOOLONG` for `CSC_LINK` | 1 | Decode the base64 certificate secret to a temporary `.p12` file and pass that path to electron-builder |

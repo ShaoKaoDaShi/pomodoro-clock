@@ -21,3 +21,5 @@
 - Verified the new command locally with `npm run release:ci -- --publish never -c.mac.forceCodeSigning=true -c.mac.notarize=true`; it no longer fails on argument parsing and reaches the expected Developer ID signing check.
 - Added a macOS-only `Validate macOS signing secrets` workflow step so missing `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_API_KEY`, `APPLE_API_KEY_ID`, or `APPLE_API_ISSUER` fails with a clear message before electron-builder runs.
 - Re-verified with `git diff --check && npm run build`; local build still succeeds.
+- Fixed the macOS `ENAMETOOLONG` signing failure by decoding the base64 `CSC_LINK` secret into a temporary `.p12` certificate file and passing that file path as `CSC_LINK` during the macOS release step.
+- Re-verified with `git diff --check && npm run build`; local build still succeeds after the workflow change.

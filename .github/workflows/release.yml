@@ -27,13 +27,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate macOS signing secrets
+      - name: Prepare macOS signing certificate
         if: runner.os == 'macOS'
+        id: mac-signing
         shell: bash
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-
         run: |
           for name in CSC_LINK CSC_KEY_PASSWORD; do
             if [ -z "${!name}" ]; then
@@ -42,11 +42,19 @@ jobs:
             fi
           done
 
+          certificate_path="$RUNNER_TEMP/mac-certificate.p12"
+          printf '%s' "$CSC_LINK" | base64 --decode > "$certificate_path"
+          if [ ! -s "$certificate_path" ]; then
+            echo "Failed to decode CSC_LINK into a certificate file"
+            exit 1
+          fi
+          echo "certificate_path=$certificate_path" >> "$GITHUB_OUTPUT"
+
       - name: Build and Release macOS
         if: runner.os == 'macOS'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_LINK: ${{ steps.mac-signing.outputs.certificate_path }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
         run: npm run release:ci -- -c.mac.forceCodeSigning=true -c.mac.notarize=true
 
