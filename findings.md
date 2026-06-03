@@ -10,3 +10,5 @@
 - Development mode cannot perform real update checks; the UI now displays that unsupported state instead of pretending to check.
 - `.github/workflows/release.yml` previously installed pnpm, cached pnpm, ran `pnpm install --frozen-lockfile`, and ran `pnpm run release:ci`.
 - The repository has `package-lock.json` and npm scripts, so CI release should use `npm ci` and `npm run release:ci`.
+- GitHub release `v1.0.34` publishes `latest-mac.yml` with only `pomodoro-clock-1.0.34.dmg`; macOS `electron-updater` requires a ZIP artifact in the update metadata, so checks fail with `ZIP file not provided`.
+- Electron Builder target fix: macOS needs both `dmg` for manual installation and `zip` for automatic updates; Windows `nsis` and Linux `AppImage` are already supported by `electron-updater` metadata generation.

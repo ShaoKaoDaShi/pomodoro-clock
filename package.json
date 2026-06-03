@@ -16,6 +16,7 @@
   "build": {
     "appId": "com.pomodoro.clock",
     "productName": "番茄时钟",
+    "artifactName": "${name}-${version}-${arch}.${ext}",
     "asar": true,
     "directories": {
       "output": "release"
@@ -32,7 +33,8 @@
       "icon": "build/icon.icns",
       "category": "public.app-category.productivity",
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ]
     },
     "win": {

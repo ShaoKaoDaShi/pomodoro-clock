@@ -10,3 +10,5 @@
 - Extended `src/App.tsx` and `src/components/SettingsPanel.tsx` to show current/latest version, update status, manual check button, and restart-to-update action.
 - Verified with `npm run build`; Vite and Electron Builder completed successfully.
 - Updated `.github/workflows/release.yml` to remove pnpm setup/cache and use `npm ci` plus `npm run release:ci`.
+- Diagnosed macOS update check failure: published `latest-mac.yml` for `v1.0.34` lacks the required ZIP artifact and only lists the DMG.
+- Updated `package.json` mac build target to generate both `dmg` and `zip`, preserving Windows `nsis` and Linux `AppImage` update targets.

@@ -10,6 +10,7 @@ Goal: Improve the new-version update feature and release automation so users can
 4. Add UI-visible update state and manual actions - complete
 5. Verify build and update planning notes - complete
 6. Update GitHub release workflow from pnpm to npm - complete
+7. Fix cross-platform update artifacts for Electron updater - complete
 
 ## Decisions
 
