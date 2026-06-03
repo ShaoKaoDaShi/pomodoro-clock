@@ -17,3 +17,5 @@
 - Updated the release workflow to pass signing/notarization secrets and require forced code signing plus notarization only on macOS release builds.
 - Added a clearer macOS code-signature failure message in the update UI.
 - Verified with `npm run build`; local build succeeds with ad-hoc signing while release builds remain protected by forced signing.
+- Fixed GitHub Actions `types is not iterable` by changing the macOS release command to use electron-builder `-c.mac.*` config overrides.
+- Verified the new command locally with `npm run release:ci -- --publish never -c.mac.forceCodeSigning=true -c.mac.notarize=true`; it no longer fails on argument parsing and reaches the expected Developer ID signing check.

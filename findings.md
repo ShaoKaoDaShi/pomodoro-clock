@@ -15,3 +15,4 @@
 - Restart-to-update could appear ineffective because install was gated only by `updateState.status === "downloaded"`; keeping an explicit downloaded flag and installing state makes the IPC action resilient to state transitions and gives immediate UI feedback.
 - GitHub release `v1.0.35` now includes `pomodoro-clock-1.0.35-arm64.zip`, but macOS installation fails with `Code signature ... did not pass validation`, which occurs after download when Squirrel.Mac validates the update archive.
 - Local macOS builds fall back to ad-hoc signing and skip notarization; this is acceptable for development but not sufficient for auto-update releases. The release workflow must provide Developer ID signing secrets and notarization credentials.
+- `electron-builder` treats `--mac.forceCodeSigning=true` as a malformed mac platform/target argument, causing `types is not iterable`; config values must be overridden with `-c.mac.forceCodeSigning=true` and `-c.mac.notarize=true`.

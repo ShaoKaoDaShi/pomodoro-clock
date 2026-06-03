@@ -38,7 +38,7 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           if [ "${{ runner.os }}" = "macOS" ]; then
-            npm run release:ci -- --mac.forceCodeSigning=true --mac.notarize=true
+            npm run release:ci -- -c.mac.forceCodeSigning=true -c.mac.notarize=true
           else
             npm run release:ci
           fi

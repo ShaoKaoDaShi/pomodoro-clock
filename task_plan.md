@@ -13,6 +13,7 @@ Goal: Improve the new-version update feature and release automation so users can
 7. Fix cross-platform update artifacts for Electron updater - complete
 8. Fix restart-to-update action reliability - complete
 9. Fix macOS signed-update release requirements - complete
+10. Fix electron-builder macOS release CLI override parsing - complete
 
 ## Decisions
 
@@ -30,3 +31,4 @@ Goal: Improve the new-version update feature and release automation so users can
 |-------|---------|------------|
 | `SettingsPanelProps` missing update props | 1 | Added typed update props and action callbacks to `SettingsPanel` |
 | `npm run build` failed after enabling `mac.forceCodeSigning` globally | 1 | Moved forced signing/notarization to the macOS GitHub release command so local builds still work |
+| GitHub Actions failed with `types is not iterable` | 1 | Replaced `--mac.forceCodeSigning` CLI args with electron-builder config overrides `-c.mac.forceCodeSigning` and `-c.mac.notarize` |
