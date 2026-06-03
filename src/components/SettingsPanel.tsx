@@ -42,15 +42,19 @@ export default function SettingsPanel({
   const isCheckingUpdate = updateState.status === "checking";
   const isDownloadingUpdate = updateState.status === "downloading";
   const isDownloadedUpdate = updateState.status === "downloaded";
+  const isInstallingUpdate = updateState.status === "installing";
   const isUpdateActionDisabled =
     isCheckingUpdate ||
     isDownloadingUpdate ||
+    isInstallingUpdate ||
     updateState.status === "unsupported";
   const updateActionText = isCheckingUpdate
     ? "检查中..."
     : isDownloadingUpdate
       ? "下载中..."
-      : "检查更新";
+      : isInstallingUpdate
+        ? "正在重启..."
+        : "检查更新";
 
   return (
     <div
@@ -178,7 +182,9 @@ export default function SettingsPanel({
             onClick={
               isDownloadedUpdate ? onInstallDownloadedUpdate : onCheckForUpdates
             }
-            disabled={!isDownloadedUpdate && isUpdateActionDisabled}
+            disabled={
+              isInstallingUpdate || (!isDownloadedUpdate && isUpdateActionDisabled)
+            }
           >
             {isDownloadedUpdate ? "重启更新" : updateActionText}
           </button>

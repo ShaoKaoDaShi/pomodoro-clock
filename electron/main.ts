@@ -40,6 +40,8 @@ let followTimer: NodeJS.Timeout | null = null;
 let mainTimer: NodeJS.Timeout | null = null;
 let isWorkSession = true;
 let isUpdateReminderRegistered = false;
+let hasDownloadedUpdate = false;
+let isInstallingUpdate = false;
 let updateState: UpdateState = {
   status: app.isPackaged ? "idle" : "unsupported",
   currentVersion: app.getVersion(),
@@ -315,12 +317,27 @@ function setUpdateState(nextState: Partial<UpdateState>): void {
   sendToMainWindow("update-state-changed", updateState);
 }
 
+function getUpdateErrorMessage(error: Error): string {
+  if (process.platform === "darwin" && error.message.includes("Code signature")) {
+    return "安装更新失败：新版本未通过 macOS 代码签名校验，请下载安装包或等待已签名版本。";
+  }
+
+  return error.message;
+}
+
 function installDownloadedUpdate(): void {
-  if (updateState.status !== "downloaded") {
+  if (!hasDownloadedUpdate || isInstallingUpdate) {
     return;
   }
 
-  autoUpdater.quitAndInstall();
+  isInstallingUpdate = true;
+  setUpdateState({
+    status: "installing",
+    message: "正在重启并安装更新...",
+    error: undefined,
+  });
+
+  setImmediate(() => autoUpdater.quitAndInstall(false, true));
 }
 
 function registerUpdateReminder(): void {
@@ -341,6 +358,8 @@ function registerUpdateReminder(): void {
   autoUpdater.autoDownload = true;
 
   autoUpdater.on("checking-for-update", () => {
+    hasDownloadedUpdate = false;
+    isInstallingUpdate = false;
     setUpdateState({
       status: "checking",
       message: "正在检查更新...",
@@ -379,6 +398,8 @@ function registerUpdateReminder(): void {
   });
 
   autoUpdater.on("update-downloaded", (info) => {
+    hasDownloadedUpdate = true;
+    isInstallingUpdate = false;
     setUpdateState({
       status: "downloaded",
       latestVersion: info.version,
@@ -404,10 +425,13 @@ function registerUpdateReminder(): void {
   });
 
   autoUpdater.on("error", (error) => {
+    isInstallingUpdate = false;
     setUpdateState({
-      status: "error",
-      message: "检查更新失败，请稍后重试",
-      error: error.message,
+      status: hasDownloadedUpdate ? "downloaded" : "error",
+      message: hasDownloadedUpdate
+        ? "安装更新失败，请重试"
+        : "检查更新失败，请稍后重试",
+      error: getUpdateErrorMessage(error),
     });
   });
 }
@@ -422,7 +446,8 @@ function checkForUpdates(): UpdateState {
   if (
     updateState.status === "checking" ||
     updateState.status === "downloading" ||
-    updateState.status === "downloaded"
+    updateState.status === "downloaded" ||
+    updateState.status === "installing"
   ) {
     return updateState;
   }
@@ -431,7 +456,7 @@ function checkForUpdates(): UpdateState {
     setUpdateState({
       status: "error",
       message: "检查更新失败，请稍后重试",
-      error: error.message,
+      error: getUpdateErrorMessage(error),
     });
   });
 

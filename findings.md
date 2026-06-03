@@ -12,3 +12,6 @@
 - The repository has `package-lock.json` and npm scripts, so CI release should use `npm ci` and `npm run release:ci`.
 - GitHub release `v1.0.34` publishes `latest-mac.yml` with only `pomodoro-clock-1.0.34.dmg`; macOS `electron-updater` requires a ZIP artifact in the update metadata, so checks fail with `ZIP file not provided`.
 - Electron Builder target fix: macOS needs both `dmg` for manual installation and `zip` for automatic updates; Windows `nsis` and Linux `AppImage` are already supported by `electron-updater` metadata generation.
+- Restart-to-update could appear ineffective because install was gated only by `updateState.status === "downloaded"`; keeping an explicit downloaded flag and installing state makes the IPC action resilient to state transitions and gives immediate UI feedback.
+- GitHub release `v1.0.35` now includes `pomodoro-clock-1.0.35-arm64.zip`, but macOS installation fails with `Code signature ... did not pass validation`, which occurs after download when Squirrel.Mac validates the update archive.
+- Local macOS builds fall back to ad-hoc signing and skip notarization; this is acceptable for development but not sufficient for auto-update releases. The release workflow must provide Developer ID signing secrets and notarization credentials.

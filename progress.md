@@ -12,3 +12,8 @@
 - Updated `.github/workflows/release.yml` to remove pnpm setup/cache and use `npm ci` plus `npm run release:ci`.
 - Diagnosed macOS update check failure: published `latest-mac.yml` for `v1.0.34` lacks the required ZIP artifact and only lists the DMG.
 - Updated `package.json` mac build target to generate both `dmg` and `zip`, preserving Windows `nsis` and Linux `AppImage` update targets.
+- Fixed restart-to-update action by tracking downloaded/installing state in the main process and surfacing an installing status in the settings UI.
+- Diagnosed the `v1.0.35` restart update failure as macOS code-signature validation failure, not an IPC/button issue.
+- Updated the release workflow to pass signing/notarization secrets and require forced code signing plus notarization only on macOS release builds.
+- Added a clearer macOS code-signature failure message in the update UI.
+- Verified with `npm run build`; local build succeeds with ad-hoc signing while release builds remain protected by forced signing.
