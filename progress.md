@@ -23,3 +23,10 @@
 - Re-verified with `git diff --check && npm run build`; local build still succeeds.
 - Fixed the macOS `ENAMETOOLONG` signing failure by decoding the base64 `CSC_LINK` secret into a temporary `.p12` certificate file and passing that file path as `CSC_LINK` during the macOS release step.
 - Re-verified with `git diff --check && npm run build`; local build still succeeds after the workflow change.
+- Added a dedicated settings view opened from a new gear button on the timer page.
+- Moved update, open-at-login, and always-on-top controls into the dedicated settings view while keeping duration and follow controls on the timer page.
+- Verified with `npm run build`; Vite and Electron Builder completed successfully.
+- Moved the settings entry to a smaller, low-emphasis top-right corner icon on the timer card.
+- Re-verified with `npm run build`; Vite and Electron Builder completed successfully.
+- Fixed settings switch rendering by making the visual track and knob block-level elements with explicit dimensions.
+- Re-verified with `npm run build`; Vite and Electron Builder completed successfully.

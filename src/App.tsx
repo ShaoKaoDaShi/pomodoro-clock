@@ -32,6 +32,7 @@ const App = () => {
   });
   const [updateState, setUpdateState] =
     useState<UpdateState>(initialUpdateState);
+  const [isSettingsView, setIsSettingsView] = useState(false);
 
   useEffect(() => {
     if (isFollowWindow) {
@@ -106,6 +107,14 @@ const App = () => {
     ipcRenderer.send("install-downloaded-update");
   };
 
+  const handleOpenSettings = () => {
+    setIsSettingsView(true);
+  };
+
+  const handleCloseSettings = () => {
+    setIsSettingsView(false);
+  };
+
   const timer = usePomodoroTimer({
     isFollowWindow,
     onTimerCompleteWork: handleTimerCompleteWork,
@@ -178,44 +187,130 @@ const App = () => {
           }
         `}
       >
-        <ModeSwitch
-          isHidden={isMiniMode}
-          isWorkSession={timer.isWorkSession}
-          onSwitchMode={timer.switchMode}
-        />
-        <TimerDisplay
-          formattedTime={formattedTime}
-          isMiniMode={isMiniMode}
-          timerTextClassName={timerTextClassName}
-          statusText={statusText}
-        />
-        <TimerControls
-          isHidden={isMiniMode}
-          isRunning={timer.isRunning}
-          primaryButtonClassName={primaryButtonClassName}
-          secondaryButtonClassName={secondaryButtonClassName}
-          onStart={timer.startTimer}
-          onPause={timer.pauseTimer}
-          onReset={timer.resetTimer}
-        />
-        <SettingsPanel
-          isHidden={isMiniMode}
-          workTime={timer.workTime}
-          breakTime={timer.breakTime}
-          isRunning={timer.isRunning}
-          isAlwaysOnTop={isAlwaysOnTop}
-          isOpenAtLogin={isOpenAtLogin}
-          isFollowActive={isFollowActive}
-          theme={theme}
-          updateState={updateState}
-          onWorkTimeChange={handleWorkTimeChange}
-          onBreakTimeChange={handleBreakTimeChange}
-          onAlwaysOnTopChange={handleAlwaysOnTopChange}
-          onOpenAtLoginChange={handleOpenAtLoginChange}
-          onFollowMouse={handleFollowMouse}
-          onCheckForUpdates={handleCheckForUpdates}
-          onInstallDownloadedUpdate={handleInstallDownloadedUpdate}
-        />
+        {isSettingsView && !isMiniMode ? (
+          <SettingsPanel
+            isAlwaysOnTop={isAlwaysOnTop}
+            isOpenAtLogin={isOpenAtLogin}
+            theme={theme}
+            updateState={updateState}
+            onBack={handleCloseSettings}
+            onAlwaysOnTopChange={handleAlwaysOnTopChange}
+            onOpenAtLoginChange={handleOpenAtLoginChange}
+            onCheckForUpdates={handleCheckForUpdates}
+            onInstallDownloadedUpdate={handleInstallDownloadedUpdate}
+          />
+        ) : (
+          <>
+            <button
+              className={`absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-gray-300 transition-colors hover:bg-white/60 hover:text-gray-500 [-webkit-app-region:no-drag] ${isMiniMode ? "hidden" : ""}`}
+              onClick={handleOpenSettings}
+              title="设置"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.802-2.942.768-2.14 2.14.43.735.02 1.677-.815 1.882-1.56.38-1.56 2.6 0 2.98.835.205 1.245 1.147.816 1.882-.803 1.372.767 2.942 2.14 2.14a1.532 1.532 0 012.285.948c.38 1.56 2.6 1.56 2.98 0a1.532 1.532 0 012.286-.948c1.372.802 2.942-.768 2.14-2.14a1.532 1.532 0 01.815-1.882c1.56-.38 1.56-2.6 0-2.98a1.532 1.532 0 01-.816-1.882c.803-1.372-.767-2.942-2.14-2.14a1.532 1.532 0 01-2.285-.948zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+            <ModeSwitch
+              isHidden={isMiniMode}
+              isWorkSession={timer.isWorkSession}
+              onSwitchMode={timer.switchMode}
+            />
+            <TimerDisplay
+              formattedTime={formattedTime}
+              isMiniMode={isMiniMode}
+              timerTextClassName={timerTextClassName}
+              statusText={statusText}
+            />
+            <TimerControls
+              isHidden={isMiniMode}
+              isRunning={timer.isRunning}
+              primaryButtonClassName={primaryButtonClassName}
+              secondaryButtonClassName={secondaryButtonClassName}
+              onStart={timer.startTimer}
+              onPause={timer.pauseTimer}
+              onReset={timer.resetTimer}
+            />
+            <div
+              className={`settings-area flex flex-col gap-4 text-left pt-6 border-t ${theme.border} transition-all duration-300 [-webkit-app-region:no-drag] ${isMiniMode ? "hidden" : ""}`}
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/50 p-3 rounded-xl">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    专注时长
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      value={timer.workTime}
+                      min="1"
+                      max="60"
+                      className={`w-full bg-transparent font-bold text-lg text-gray-700 outline-none p-0 ${theme.text}`}
+                      onChange={handleWorkTimeChange}
+                      disabled={timer.isRunning}
+                    />
+                    <span className="text-xs text-gray-400 ml-1">min</span>
+                  </div>
+                </div>
+
+                <div className="bg-white/50 p-3 rounded-xl">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    休息时长
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      value={timer.breakTime}
+                      min="1"
+                      max="30"
+                      className={`w-full bg-transparent font-bold text-lg text-gray-700 outline-none p-0 ${theme.text}`}
+                      onChange={handleBreakTimeChange}
+                      disabled={timer.isRunning}
+                    />
+                    <span className="text-xs text-gray-400 ml-1">min</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center px-1">
+                <button
+                  className={`transition-colors p-2 rounded-full ${
+                    isFollowActive
+                      ? "text-indigo-500 bg-indigo-50 hover:bg-indigo-100"
+                      : "text-gray-400 hover:text-indigo-500 hover:bg-indigo-50"
+                  }`}
+                  onClick={handleFollowMouse}
+                  title={isFollowActive ? "关闭跟随模式" : "开启跟随模式"}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7" />
+                    <rect x="12" y="13" width="10" height="7" rx="2" />
+                  </svg>
+                </button>
+                <p className="text-[10px] text-gray-300">
+                  Cmd+Shift+X 退出跟随模式
+                </p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

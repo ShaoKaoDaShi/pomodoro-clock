@@ -18,3 +18,4 @@
 - `electron-builder` treats `--mac.forceCodeSigning=true` as a malformed mac platform/target argument, causing `types is not iterable`; config values must be overridden with `-c.mac.forceCodeSigning=true` and `-c.mac.notarize=true`.
 - The GitHub Actions error `/Users/runner/work/pomodoro-clock/pomodoro-clock not a file` appears after `CSC_KEY_PASSWORD is not defined`, indicating macOS signing secrets are missing or invalid before electron-builder attempts to resolve the certificate.
 - `ENAMETOOLONG` with a path containing the base64 certificate means `CSC_LINK` was passed as raw base64 text; this electron-builder version treats `CSC_LINK` as a link/path, so the workflow decodes it into `$RUNNER_TEMP/mac-certificate.p12` first and passes that path.
+- Main timer controls live in `src/App.tsx`; `SettingsPanel` can be narrowed to app preference controls and shown as a separate view from a settings button.

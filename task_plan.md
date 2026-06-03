@@ -16,6 +16,7 @@ Goal: Improve the new-version update feature and release automation so users can
 10. Fix electron-builder macOS release CLI override parsing - complete
 11. Add explicit macOS signing secret validation - complete
 12. Decode base64 CSC_LINK before macOS signing - complete
+13. Add a dedicated settings page with update/startup/always-on-top controls - complete
 
 ## Decisions
 
