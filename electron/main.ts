@@ -141,7 +141,7 @@ function createMainWindow(): BrowserWindow {
     resizable: false,
     frame: false,
     transparent: true,
-    hasShadow: true,
+    hasShadow: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
