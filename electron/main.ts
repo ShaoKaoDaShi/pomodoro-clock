@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  dialog,
   globalShortcut,
   ipcMain,
   Menu,
@@ -9,6 +10,7 @@ import {
   screen,
   Tray,
 } from "electron";
+import { autoUpdater } from "electron-updater";
 import path from "path";
 
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
@@ -297,6 +299,44 @@ function showNotification({ title, body }: NotificationPayload): void {
   notification.show();
 }
 
+function registerUpdateReminder(): void {
+  if (!app.isPackaged) {
+    return;
+  }
+
+  autoUpdater.autoDownload = true;
+
+  autoUpdater.on("update-available", (info) => {
+    showNotification({
+      title: "发现新版本",
+      body: `番茄时钟 ${info.version} 可更新，正在后台下载。`,
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    showMainWindow();
+    void dialog
+      .showMessageBox({
+        type: "info",
+        buttons: ["立即重启更新", "稍后"],
+        defaultId: 0,
+        cancelId: 1,
+        title: "更新已准备好",
+        message: `番茄时钟 ${info.version} 已下载完成`,
+        detail: "重启应用后即可更新到最新版本。",
+      })
+      .then(({ response }) => {
+        if (response === 0) {
+          autoUpdater.quitAndInstall();
+        }
+      });
+  });
+
+  autoUpdater.checkForUpdates().catch(() => {
+    // Update checks are best-effort and should not interrupt normal timer usage.
+  });
+}
+
 function registerIpcHandlers(): void {
   ipcMain.on("start-follow-mouse", () => {
     createFollowWindow();
@@ -377,6 +417,7 @@ function registerAppLifecycle(): void {
     createMainWindow();
     createTray();
     registerGlobalShortcuts();
+    registerUpdateReminder();
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {

@@ -1,12 +1,12 @@
 # 必须调用技能
 
 planning-with-files
+software-architecture
 
 # 可选技能
 
 web-design-guidelines
 vercel-react-best-practices
-software-architecture
 
 # 禁止调用技能
 
