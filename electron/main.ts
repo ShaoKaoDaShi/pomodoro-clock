@@ -12,6 +12,7 @@ import {
 } from "electron";
 import { autoUpdater } from "electron-updater";
 import path from "path";
+import type { UpdateState } from "../src/types/update";
 
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
 
@@ -38,6 +39,12 @@ let tray: Tray | null = null;
 let followTimer: NodeJS.Timeout | null = null;
 let mainTimer: NodeJS.Timeout | null = null;
 let isWorkSession = true;
+let isUpdateReminderRegistered = false;
+let updateState: UpdateState = {
+  status: app.isPackaged ? "idle" : "unsupported",
+  currentVersion: app.getVersion(),
+  message: app.isPackaged ? undefined : "开发模式下无法检查更新",
+};
 
 function supportsOpenAtLogin(): boolean {
   return process.platform === "darwin" || process.platform === "win32";
@@ -299,21 +306,85 @@ function showNotification({ title, body }: NotificationPayload): void {
   notification.show();
 }
 
+function setUpdateState(nextState: Partial<UpdateState>): void {
+  updateState = {
+    ...updateState,
+    ...nextState,
+    currentVersion: app.getVersion(),
+  };
+  sendToMainWindow("update-state-changed", updateState);
+}
+
+function installDownloadedUpdate(): void {
+  if (updateState.status !== "downloaded") {
+    return;
+  }
+
+  autoUpdater.quitAndInstall();
+}
+
 function registerUpdateReminder(): void {
+  if (isUpdateReminderRegistered) {
+    return;
+  }
+
+  isUpdateReminderRegistered = true;
+
   if (!app.isPackaged) {
+    setUpdateState({
+      status: "unsupported",
+      message: "开发模式下无法检查更新",
+    });
     return;
   }
 
   autoUpdater.autoDownload = true;
 
+  autoUpdater.on("checking-for-update", () => {
+    setUpdateState({
+      status: "checking",
+      message: "正在检查更新...",
+      error: undefined,
+    });
+  });
+
   autoUpdater.on("update-available", (info) => {
+    setUpdateState({
+      status: "available",
+      latestVersion: info.version,
+      message: `发现新版本 ${info.version}，正在后台下载。`,
+      error: undefined,
+    });
     showNotification({
       title: "发现新版本",
       body: `番茄时钟 ${info.version} 可更新，正在后台下载。`,
     });
   });
 
+  autoUpdater.on("update-not-available", (info) => {
+    setUpdateState({
+      status: "not-available",
+      latestVersion: info.version,
+      message: "当前已是最新版本",
+      error: undefined,
+    });
+  });
+
+  autoUpdater.on("download-progress", () => {
+    setUpdateState({
+      status: "downloading",
+      message: "新版本正在下载...",
+      error: undefined,
+    });
+  });
+
   autoUpdater.on("update-downloaded", (info) => {
+    setUpdateState({
+      status: "downloaded",
+      latestVersion: info.version,
+      message: `新版本 ${info.version} 已下载，重启后生效。`,
+      error: undefined,
+    });
     showMainWindow();
     void dialog
       .showMessageBox({
@@ -323,18 +394,48 @@ function registerUpdateReminder(): void {
         cancelId: 1,
         title: "更新已准备好",
         message: `番茄时钟 ${info.version} 已下载完成`,
-        detail: "重启应用后即可更新到最新版本。",
+        detail: "重启应用后即可更新到最新版本，也可以稍后在设置中点击更新。",
       })
       .then(({ response }) => {
         if (response === 0) {
-          autoUpdater.quitAndInstall();
+          installDownloadedUpdate();
         }
       });
   });
 
-  autoUpdater.checkForUpdates().catch(() => {
-    // Update checks are best-effort and should not interrupt normal timer usage.
+  autoUpdater.on("error", (error) => {
+    setUpdateState({
+      status: "error",
+      message: "检查更新失败，请稍后重试",
+      error: error.message,
+    });
   });
+}
+
+function checkForUpdates(): UpdateState {
+  registerUpdateReminder();
+
+  if (!app.isPackaged) {
+    return updateState;
+  }
+
+  if (
+    updateState.status === "checking" ||
+    updateState.status === "downloading" ||
+    updateState.status === "downloaded"
+  ) {
+    return updateState;
+  }
+
+  void autoUpdater.checkForUpdates().catch((error: Error) => {
+    setUpdateState({
+      status: "error",
+      message: "检查更新失败，请稍后重试",
+      error: error.message,
+    });
+  });
+
+  return updateState;
 }
 
 function registerIpcHandlers(): void {
@@ -378,6 +479,18 @@ function registerIpcHandlers(): void {
     showNotification(payload);
   });
 
+  ipcMain.on("request-update-state", (event) => {
+    event.sender.send("update-state-changed", updateState);
+  });
+
+  ipcMain.on("check-for-updates", () => {
+    checkForUpdates();
+  });
+
+  ipcMain.on("install-downloaded-update", () => {
+    installDownloadedUpdate();
+  });
+
   ipcMain.on("toggle-always-on-top", (_event, flag: boolean) => {
     const window = getMainWindow();
     if (window) {
@@ -417,7 +530,7 @@ function registerAppLifecycle(): void {
     createMainWindow();
     createTray();
     registerGlobalShortcuts();
-    registerUpdateReminder();
+    checkForUpdates();
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {

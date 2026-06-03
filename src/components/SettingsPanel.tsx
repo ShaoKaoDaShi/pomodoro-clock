@@ -1,5 +1,6 @@
 import type { ChangeEvent } from "react";
 import type { SessionTheme } from "../constants/theme";
+import type { UpdateState } from "../types/update";
 
 interface SettingsPanelProps {
   isHidden: boolean;
@@ -10,11 +11,14 @@ interface SettingsPanelProps {
   isOpenAtLogin: boolean;
   isFollowActive: boolean;
   theme: SessionTheme;
+  updateState: UpdateState;
   onWorkTimeChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onBreakTimeChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onAlwaysOnTopChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onOpenAtLoginChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onFollowMouse: () => void;
+  onCheckForUpdates: () => void;
+  onInstallDownloadedUpdate: () => void;
 }
 
 export default function SettingsPanel({
@@ -26,12 +30,28 @@ export default function SettingsPanel({
   isOpenAtLogin,
   isFollowActive,
   theme,
+  updateState,
   onWorkTimeChange,
   onBreakTimeChange,
   onAlwaysOnTopChange,
   onOpenAtLoginChange,
   onFollowMouse,
+  onCheckForUpdates,
+  onInstallDownloadedUpdate,
 }: SettingsPanelProps) {
+  const isCheckingUpdate = updateState.status === "checking";
+  const isDownloadingUpdate = updateState.status === "downloading";
+  const isDownloadedUpdate = updateState.status === "downloaded";
+  const isUpdateActionDisabled =
+    isCheckingUpdate ||
+    isDownloadingUpdate ||
+    updateState.status === "unsupported";
+  const updateActionText = isCheckingUpdate
+    ? "检查中..."
+    : isDownloadingUpdate
+      ? "下载中..."
+      : "检查更新";
+
   return (
     <div
       className={`
@@ -136,6 +156,39 @@ export default function SettingsPanel({
             <rect x="12" y="13" width="10" height="7" rx="2" />
           </svg>
         </button>
+      </div>
+
+      <div className="rounded-xl bg-white/50 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-gray-500">版本更新</p>
+            <p className="mt-1 text-[11px] text-gray-400">
+              当前版本 {updateState.currentVersion || "未知"}
+              {updateState.latestVersion
+                ? ` / 最新版本 ${updateState.latestVersion}`
+                : ""}
+            </p>
+          </div>
+          <button
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+              isDownloadedUpdate
+                ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                : "bg-slate-700 text-white hover:bg-slate-800 disabled:bg-gray-300 disabled:text-gray-500"
+            }`}
+            onClick={
+              isDownloadedUpdate ? onInstallDownloadedUpdate : onCheckForUpdates
+            }
+            disabled={!isDownloadedUpdate && isUpdateActionDisabled}
+          >
+            {isDownloadedUpdate ? "重启更新" : updateActionText}
+          </button>
+        </div>
+        {updateState.message ? (
+          <p className="mt-2 text-[11px] text-gray-500">{updateState.message}</p>
+        ) : null}
+        {updateState.error ? (
+          <p className="mt-1 text-[10px] text-red-400">{updateState.error}</p>
+        ) : null}
       </div>
 
       <div className="text-center">

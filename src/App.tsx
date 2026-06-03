@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import { ipcRenderer } from "electron";
 import ModeSwitch from "./components/ModeSwitch";
@@ -9,7 +9,13 @@ import { getTheme } from "./constants/theme";
 import { usePomodoroTimer } from "./hooks/usePomodoroTimer";
 import { useTimerSync } from "./hooks/useTimerSync";
 import { useWindowControls } from "./hooks/useWindowControls";
+import type { UpdateState } from "./types/update";
 import { formatTime } from "./utils/time";
+
+const initialUpdateState: UpdateState = {
+  status: "idle",
+  currentVersion: "",
+};
 
 const App = () => {
   const isFollowWindow = window.location.hash === "#follow";
@@ -24,6 +30,28 @@ const App = () => {
   } = useWindowControls({
     isFollowWindow,
   });
+  const [updateState, setUpdateState] =
+    useState<UpdateState>(initialUpdateState);
+
+  useEffect(() => {
+    if (isFollowWindow) {
+      return;
+    }
+
+    const handleUpdateStateChanged = (_event: unknown, state: UpdateState) => {
+      setUpdateState(state);
+    };
+
+    ipcRenderer.on("update-state-changed", handleUpdateStateChanged);
+    ipcRenderer.send("request-update-state");
+
+    return () => {
+      ipcRenderer.removeListener(
+        "update-state-changed",
+        handleUpdateStateChanged,
+      );
+    };
+  }, [isFollowWindow]);
 
   const playSound = (isWorkSession: boolean) => {
     const AudioContextCtor =
@@ -68,6 +96,14 @@ const App = () => {
 
   const stopTimerCheck = () => {
     ipcRenderer.send("stop-timer-check");
+  };
+
+  const handleCheckForUpdates = () => {
+    ipcRenderer.send("check-for-updates");
+  };
+
+  const handleInstallDownloadedUpdate = () => {
+    ipcRenderer.send("install-downloaded-update");
   };
 
   const timer = usePomodoroTimer({
@@ -171,11 +207,14 @@ const App = () => {
           isOpenAtLogin={isOpenAtLogin}
           isFollowActive={isFollowActive}
           theme={theme}
+          updateState={updateState}
           onWorkTimeChange={handleWorkTimeChange}
           onBreakTimeChange={handleBreakTimeChange}
           onAlwaysOnTopChange={handleAlwaysOnTopChange}
           onOpenAtLoginChange={handleOpenAtLoginChange}
           onFollowMouse={handleFollowMouse}
+          onCheckForUpdates={handleCheckForUpdates}
+          onInstallDownloadedUpdate={handleInstallDownloadedUpdate}
         />
       </div>
     </div>
