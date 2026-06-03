@@ -19,3 +19,5 @@
 - Verified with `npm run build`; local build succeeds with ad-hoc signing while release builds remain protected by forced signing.
 - Fixed GitHub Actions `types is not iterable` by changing the macOS release command to use electron-builder `-c.mac.*` config overrides.
 - Verified the new command locally with `npm run release:ci -- --publish never -c.mac.forceCodeSigning=true -c.mac.notarize=true`; it no longer fails on argument parsing and reaches the expected Developer ID signing check.
+- Added a macOS-only `Validate macOS signing secrets` workflow step so missing `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_API_KEY`, `APPLE_API_KEY_ID`, or `APPLE_API_ISSUER` fails with a clear message before electron-builder runs.
+- Re-verified with `git diff --check && npm run build`; local build still succeeds.
